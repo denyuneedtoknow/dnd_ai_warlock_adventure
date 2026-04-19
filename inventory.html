@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Інвентар — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">Інвентар</div>
+        <div class="page-subtitle">Спорядження та майно Діоніса</div>
+      </div>
+    </div>
+
+    <!-- WALLET -->
+    <div class="wallet" id="wallet"></div>
+
+    <!-- PAPERDOLL + BACKPACK -->
+    <div class="inventory-layout">
+
+      <!-- LEFT: paperdoll labels -->
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding-top:4px" id="left-labels"></div>
+
+      <!-- CENTER: paperdoll -->
+      <div>
+        <div class="card-title" style="text-align:center;margin-bottom:.75rem">Спорядження</div>
+        <div class="paperdoll-grid" id="paperdoll"></div>
+      </div>
+
+      <!-- RIGHT: labels -->
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding-top:4px" id="right-labels"></div>
+    </div>
+
+    <div class="divider">Рюкзак</div>
+
+    <div class="card">
+      <div class="backpack-grid" id="backpack"></div>
+    </div>
+  </div>
+
+  <!-- tooltip -->
+  <div class="tooltip" id="tooltip"></div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('inventory.html');
+
+    // Slot layout: [row][col] → key or null
+    // rows 0-5, cols 0-2
+    const LAYOUT = [
+      [null,      'head',    null     ],  // row 0
+      ['gloves',  'neck',    'gloves' ],  // row 1  — both map to gloves (L/R)
+      ['ring_l',  'cape',    'ring_r' ],  // row 2
+      ['weapon',  'body',    'offhand'],  // row 3
+      [null,      'pants',   null     ],  // row 4
+      [null,      'boots',   null     ],  // row 5
+    ];
+
+    // For display we want left col to show gloves on row 1
+    // Let's use explicit slot keys per cell
+    const CELL_KEYS = [
+      [null,      'head',    null     ],
+      ['gloves',  'neck',    'gloves2'],  // gloves2 is second glove slot — map to same item
+      ['ring_l',  'cape',    'ring_r' ],
+      ['weapon',  'body',    'offhand'],
+      [null,      'pants',   null     ],
+      [null,      'boots',   null     ],
+    ];
+
+    const SLOT_LABELS = {
+      head:    { icon: '🪖', label: 'Голова'   },
+      neck:    { icon: '📿', label: 'Шия'      },
+      cape:    { icon: '🧥', label: 'Плащ'     },
+      body:    { icon: '🛡️', label: 'Тулуб'    },
+      pants:   { icon: '👖', label: 'Штани'    },
+      boots:   { icon: '👢', label: 'Взуття'   },
+      gloves:  { icon: '🧤', label: 'Рукав.'   },
+      gloves2: { icon: '🧤', label: 'Рукав.'   },
+      ring_l:  { icon: '💍', label: 'Кільце'   },
+      ring_r:  { icon: '💍', label: 'Кільце'   },
+      weapon:  { icon: '⚔️', label: 'Зброя'    },
+      offhand: { icon: '🛡', label: 'Ліва рука'},
+    };
+
+    const tooltip = document.getElementById('tooltip');
+
+    function showTip(item, el) {
+      tooltip.innerHTML = `
+        <div class="tooltip-name">${item.name}</div>
+        <div class="tooltip-type">${item.type || ''}${item.rarity ? ' · ' + item.rarity : ''}</div>
+        <div class="tooltip-desc">${item.description || ''}</div>`;
+      tooltip.classList.add('visible');
+      const r = el.getBoundingClientRect();
+      tooltip.style.left = (r.right + 8) + 'px';
+      tooltip.style.top  = r.top + 'px';
+    }
+
+    function hideTip() { tooltip.classList.remove('visible'); }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.equip-slot, .backpack-item')) hideTip();
+    });
+
+    async function init() {
+      const inv = await loadJSON('data/inventory.json');
+
+      // Wallet
+      document.getElementById('wallet').innerHTML = `
+        <div class="coin gold">  <div class="coin-dot"></div> ${inv.gold} ЗМ</div>
+        <div class="coin silver"><div class="coin-dot"></div> ${inv.silver} СМ</div>
+        <div class="coin copper"><div class="coin-dot"></div> ${inv.copper} МіМ</div>
+      `;
+
+      // Paperdoll
+      const grid = document.getElementById('paperdoll');
+      grid.innerHTML = '';
+
+      for (let row = 0; row < CELL_KEYS.length; row++) {
+        for (let col = 0; col < 3; col++) {
+          const key = CELL_KEYS[row][col];
+          const div = document.createElement('div');
+
+          if (!key) {
+            div.className = 'equip-slot empty-placeholder';
+            grid.appendChild(div);
+            continue;
+          }
+
+          // gloves2 maps to same data as gloves
+          const dataKey = key === 'gloves2' ? 'gloves' : key;
+          const item = inv.equipped[dataKey];
+          const slotDef = SLOT_LABELS[key];
+
+          div.className = 'equip-slot' + (item ? ' filled' : '');
+          div.innerHTML = `
+            <div class="slot-icon">${item ? item.icon : slotDef.icon}</div>
+            <div class="slot-label">${slotDef.label}</div>
+            ${item ? `<div class="slot-name">${item.name}</div>` : ''}
+          `;
+
+          if (item) {
+            div.addEventListener('mouseenter', () => showTip(item, div));
+            div.addEventListener('mouseleave', hideTip);
+            div.addEventListener('click', e => { e.stopPropagation(); showTip(item, div); });
+          }
+
+          grid.appendChild(div);
+        }
+      }
+
+      // Backpack
+      const bp = document.getElementById('backpack');
+      const BACKPACK_SIZE = 24;
+      bp.innerHTML = '';
+      for (let i = 0; i < BACKPACK_SIZE; i++) {
+        const item = inv.backpack[i];
+        const div = document.createElement('div');
+        div.className = 'backpack-item';
+
+        if (item) {
+          div.innerHTML = `
+            <span class="item-icon">${item.icon}</span>
+            <span class="item-name">${item.name}</span>
+            ${item.qty > 1 ? `<span class="item-qty">×${item.qty}</span>` : ''}
+          `;
+          div.addEventListener('mouseenter', () => showTip(item, div));
+          div.addEventListener('mouseleave', hideTip);
+          div.addEventListener('click', e => { e.stopPropagation(); showTip(item, div); });
+        }
+
+        bp.appendChild(div);
+      }
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

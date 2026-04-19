@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Щоденник — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">Щоденник пригод</div>
+        <div class="page-subtitle">Хроніка мандрів Діоніса</div>
+      </div>
+      <span id="entry-count" class="badge badge-muted"></span>
+    </div>
+
+    <div class="journal-list" id="journal-list"></div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('journal.html');
+
+    async function init() {
+      const journal = await loadJSON('data/journal.json');
+
+      document.getElementById('entry-count').textContent = journal.length + ' записів';
+
+      document.getElementById('journal-list').innerHTML = journal.map(e => `
+        <div class="journal-entry">
+          <div class="journal-header">
+            <span class="journal-day">День ${e.day}</span>
+            <span class="journal-location">📍 ${e.location}</span>
+            <span class="journal-date-real">${e.date_real}</span>
+          </div>
+          <div class="journal-summary">${e.summary}</div>
+          ${e.next_steps ? `<div class="journal-next">▶ ${e.next_steps}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

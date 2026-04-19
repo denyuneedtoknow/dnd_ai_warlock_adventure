@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Персонаж — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title" id="char-name">—</div>
+        <div class="page-subtitle" id="char-subtitle">—</div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="char-badges"></div>
+    </div>
+
+    <!-- COMBAT -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-title">Бойові характеристики</div>
+      <div class="combat-grid" id="combat-grid"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-title">Характеристики</div>
+      <div class="stat-grid" id="stat-grid"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem" class="two-col">
+
+      <!-- SAVING THROWS -->
+      <div class="card">
+        <div class="card-title">Рятівні кидки</div>
+        <div class="saves-grid" id="saves-grid"></div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="card">
+        <div class="card-title">Навички</div>
+        <div class="skill-list" id="skill-list"></div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div class="card">
+      <div class="card-title">Риси та здібності</div>
+      <div class="feature-list" id="feature-list"></div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('character.html');
+
+    const STAT_NAMES = { STR:'Сила', DEX:'Спритність', CON:'Статура', INT:'Інтелект', WIS:'Мудрість', CHA:'Харизма' };
+
+    async function init() {
+      const c = await loadJSON('data/character.json');
+
+      document.getElementById('char-name').textContent = c.name;
+      document.getElementById('char-subtitle').textContent =
+        `${c.race} · ${c.class} · ${c.background}`;
+
+      document.getElementById('char-badges').innerHTML = `
+        <span class="badge badge-gold">Рівень ${c.level}</span>
+        <span class="badge badge-muted">${c.alignment}</span>
+        <span class="badge badge-muted">XP: ${c.xp} / ${c.xp_next}</span>
+        <span class="badge badge-gold">Patron: ${c.patron}</span>
+      `;
+
+      // Combat
+      const combatItems = [
+        { label: 'HP',          value: `${c.hp} / ${c.hp_max}`, cls: 'hp' },
+        { label: 'Тимч. HP',    value: c.hp_temp || '—' },
+        { label: 'AC',          value: c.ac, cls: 'ac' },
+        { label: 'Ініціатива',  value: (c.initiative >= 0 ? '+' : '') + c.initiative },
+        { label: 'Швидкість',   value: c.speed + ' фут' },
+        { label: 'Проф. бонус', value: '+' + c.proficiency_bonus },
+        { label: 'Пас. Сприйн.', value: c.passive_perception },
+      ];
+      document.getElementById('combat-grid').innerHTML = combatItems.map(i =>
+        `<div class="combat-stat ${i.cls||''}">
+          <span class="label">${i.label}</span>
+          <span class="value">${i.value}</span>
+        </div>`
+      ).join('');
+
+      // Stats
+      document.getElementById('stat-grid').innerHTML = Object.entries(c.stats).map(([k, v]) =>
+        `<div class="stat-box">
+          <span class="stat-name">${k}</span>
+          <span class="stat-value">${v}</span>
+          <span class="stat-mod">${mod(v)}</span>
+          <span class="stat-name" style="margin-top:2px">${STAT_NAMES[k]}</span>
+        </div>`
+      ).join('');
+
+      // Saving throws
+      document.getElementById('saves-grid').innerHTML = Object.entries(c.saving_throws).map(([k, prof]) => {
+        const m = Math.floor((c.stats[k] - 10) / 2) + (prof ? c.proficiency_bonus : 0);
+        return `<div class="save-item ${prof ? 'proficient' : ''}">
+          <div class="dot"></div>
+          <span>${STAT_NAMES[k]}</span>
+          <span class="save-bonus">${m >= 0 ? '+' : ''}${m}</span>
+        </div>`;
+      }).join('');
+
+      // Skills
+      document.getElementById('skill-list').innerHTML = c.skills.map(s => {
+        const base = Math.floor((c.stats[s.attr] - 10) / 2);
+        const bonus = base + (s.expertise ? c.proficiency_bonus * 2 : s.proficient ? c.proficiency_bonus : 0);
+        return `<div class="skill-item">
+          <div class="skill-dot ${s.expertise ? 'expertise' : s.proficient ? 'proficient' : ''}"></div>
+          <span class="skill-name">${s.name}</span>
+          <span class="skill-attr">${s.attr}</span>
+          <span class="skill-bonus">${bonus >= 0 ? '+' : ''}${bonus}</span>
+        </div>`;
+      }).join('');
+
+      // Features
+      document.getElementById('feature-list').innerHTML = c.features.map(f =>
+        `<div class="feature-item">
+          <div class="feature-name">${f.name}</div>
+          <div class="feature-desc">${f.desc}</div>
+        </div>`
+      ).join('');
+    }
+
+    init().catch(console.error);
+  </script>
+  <style>
+    @media(max-width:600px) { .two-col { grid-template-columns: 1fr !important; } }
+  </style>
+</body>
+</html>

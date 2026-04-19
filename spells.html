@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Закляття — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">Закляття</div>
+        <div class="page-subtitle">Pact Magic · Відомі закляття</div>
+      </div>
+      <div id="spell-stats" style="text-align:right"></div>
+    </div>
+
+    <!-- PACT SLOTS -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-title">Слоти Пакту (Pact Magic)</div>
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div class="pact-slots" id="pact-slots"></div>
+        <span class="slot-level-label" id="slot-level-label"></span>
+        <span style="color:var(--text-muted);font-size:.82rem;font-style:italic">
+          Відновлюються після короткого відпочинку (Short Rest)
+        </span>
+      </div>
+    </div>
+
+    <!-- CANTRIPS -->
+    <div class="spell-section-title">Заговори (Cantrips)</div>
+    <div class="spell-cards" id="cantrips"></div>
+
+    <!-- SPELLS -->
+    <div class="spell-section-title">Відомі закляття</div>
+    <div class="spell-cards" id="spells-known"></div>
+
+    <!-- INVOCATIONS -->
+    <div class="spell-section-title">Таємні закликання (Eldritch Invocations)</div>
+    <div class="feature-list" id="invocations"></div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('spells.html');
+
+    function buildSpellCard(spell) {
+      const div = document.createElement('div');
+      div.className = 'spell-card';
+      div.innerHTML = `
+        <div class="spell-card-header">
+          <span class="spell-name">${spell.name}</span>
+          <span class="spell-school">${spell.school}</span>
+        </div>
+        <div class="spell-body">
+          <div class="spell-meta">
+            <span class="spell-tag">⏱ ${spell.casting_time}</span>
+            <span class="spell-tag">📏 ${spell.range}</span>
+            <span class="spell-tag">⏳ ${spell.duration}</span>
+            <span class="spell-tag">🔣 ${spell.components}</span>
+          </div>
+          <div class="spell-desc">${spell.description}</div>
+        </div>
+      `;
+      div.addEventListener('click', () => div.classList.toggle('expanded'));
+      return div;
+    }
+
+    async function init() {
+      const s = await loadJSON('data/spells.json');
+
+      // Stats header
+      document.getElementById('spell-stats').innerHTML = `
+        <div style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-muted);letter-spacing:.1em">
+          DC РЯТІВНОГО: <span style="color:var(--gold-light)">${s.spell_save_dc}</span>
+          &nbsp;&nbsp;БОНУС АТАКИ: <span style="color:var(--gold-light)">+${s.spell_attack_bonus}</span>
+        </div>`;
+
+      // Pact slots
+      const slotsEl = document.getElementById('pact-slots');
+      for (let i = 0; i < s.pact_slots_total; i++) {
+        const div = document.createElement('div');
+        div.className = 'spell-slot' + (i < s.pact_slots_used ? ' used' : ' available');
+        div.textContent = s.pact_slot_level;
+        slotsEl.appendChild(div);
+      }
+      document.getElementById('slot-level-label').textContent =
+        `${s.pact_slots_total - s.pact_slots_used} / ${s.pact_slots_total} слотів · Рівень ${s.pact_slot_level}`;
+
+      // Cantrips
+      const cantripsEl = document.getElementById('cantrips');
+      s.cantrips.forEach(sp => cantripsEl.appendChild(buildSpellCard(sp)));
+
+      // Known spells
+      const known = [...s.spells_known].sort((a, b) => a.level - b.level);
+      const knownEl = document.getElementById('spells-known');
+      known.forEach(sp => {
+        const card = buildSpellCard(sp);
+        // Add level badge in header
+        const header = card.querySelector('.spell-card-header');
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-gold';
+        badge.style.marginLeft = 'auto';
+        badge.textContent = sp.level + ' рівень';
+        header.appendChild(badge);
+        knownEl.appendChild(card);
+      });
+
+      // Invocations
+      document.getElementById('invocations').innerHTML = s.invocations.map(inv =>
+        `<div class="feature-item">
+          <div class="feature-name">${inv.name}</div>
+          <div class="feature-desc">${inv.desc}</div>
+        </div>`
+      ).join('');
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Персонажі — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">Персонажі</div>
+        <div class="page-subtitle">Союзники, нейтрали та вороги</div>
+      </div>
+    </div>
+
+    <div class="npc-filters">
+      <button class="filter-btn active" data-filter="all">Всі</button>
+      <button class="filter-btn" data-filter="ally">Союзники</button>
+      <button class="filter-btn" data-filter="neutral">Нейтральні</button>
+      <button class="filter-btn" data-filter="hostile">Вороги</button>
+    </div>
+
+    <div class="npc-grid" id="npc-grid"></div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('npcs.html');
+
+    const RELATION_LABELS = {
+      ally:    'Союзник',
+      neutral: 'Нейтральний',
+      hostile: 'Ворог',
+    };
+
+    let allNpcs = [];
+
+    function renderNpcs(filter) {
+      const list = filter === 'all' ? allNpcs : allNpcs.filter(n => n.relation === filter);
+      document.getElementById('npc-grid').innerHTML = list.map(n => `
+        <div class="npc-card ${n.relation}">
+          <div class="npc-card-top">
+            <div class="npc-avatar">${n.avatar}</div>
+            <div class="npc-info-top">
+              <div class="npc-name">${n.name}</div>
+              <div class="npc-role">${n.role}</div>
+            </div>
+            <span class="npc-relation">${RELATION_LABELS[n.relation]}</span>
+          </div>
+          <div class="npc-card-body">
+            <div class="npc-location">📍 ${n.location}</div>
+            <div class="npc-desc">${n.description}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderNpcs(btn.dataset.filter);
+      });
+    });
+
+    async function init() {
+      allNpcs = await loadJSON('data/npcs.json');
+      renderNpcs('all');
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

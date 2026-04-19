@@ -1,0 +1,112 @@
+{
+  "pact_slots_total": 2,
+  "pact_slots_used": 0,
+  "pact_slot_level": 3,
+  "spell_save_dc": 15,
+  "spell_attack_bonus": 7,
+  "cantrips": [
+    {
+      "name": "Смертний дотик (Chill Touch)",
+      "school": "Некромантія",
+      "casting_time": "1 дія",
+      "range": "120 футів",
+      "components": "V, S",
+      "duration": "1 раунд",
+      "description": "Кидаєш ranged spell attack. При влученні: 2d8 некротичної шкоди, ціль не може відновлювати HP до початку твого наступного ходу."
+    },
+    {
+      "name": "Жахаюче слово (Eldritch Blast)",
+      "school": "Магія виклику",
+      "casting_time": "1 дія",
+      "range": "120 футів",
+      "components": "V, S",
+      "duration": "Миттєво",
+      "description": "Кидаєш ranged spell attack. 1d10 силової шкоди. На 5 рівні — 2 промені."
+    },
+    {
+      "name": "Малюзрак (Minor Illusion)",
+      "school": "Ілюзія",
+      "casting_time": "1 дія",
+      "range": "30 футів",
+      "components": "S, M",
+      "duration": "1 хвилина",
+      "description": "Створюєш звук або образ в межах дальності. Звук може бути тихим шепотом або голосним криком. Образ не може рухатись та не видає звуку."
+    },
+    {
+      "name": "Тернистий батіг (Thorn Whip)",
+      "school": "Трансмутація",
+      "casting_time": "1 дія",
+      "range": "30 футів",
+      "components": "V, S, M",
+      "duration": "Миттєво",
+      "description": "Melee spell attack. 1d6 колюча шкода. Якщо ціль Large або менша — підтягуєш її на 10 футів до себе."
+    }
+  ],
+  "spells_known": [
+    {
+      "name": "Армія Хаосу (Hunger of Hadar)",
+      "school": "Магія виклику",
+      "level": 3,
+      "casting_time": "1 дія",
+      "range": "150 футів",
+      "components": "V, S, M",
+      "duration": "Концентрація, до 1 хв",
+      "description": "Відкриваєш портал у порожнечу. Сфера радіусом 20 футів: темрява, 2d6 холодна шкода на початку ходу кожної істоти в зоні. При успішному Dex save — не пошкоджує наприкінці ходу."
+    },
+    {
+      "name": "Гіпнотичний Шаблон (Hypnotic Pattern)",
+      "school": "Ілюзія",
+      "level": 3,
+      "casting_time": "1 дія",
+      "range": "120 футів",
+      "components": "S, M",
+      "duration": "Концентрація, до 1 хв",
+      "description": "Куб 30 футів заповнюється мерехтливими барвами. Кожна істота в зоні робить WIS saving throw або стає зачарованою та недієздатною."
+    },
+    {
+      "name": "Наказ (Command)",
+      "school": "Заклинання",
+      "level": 1,
+      "casting_time": "1 дія",
+      "range": "60 футів",
+      "components": "V",
+      "duration": "1 раунд",
+      "description": "Ціль робить WIS saving throw. При провалі — виконує одне слово-команду: Підійди, Втечи, Лягай, Зупинись, Кинь."
+    },
+    {
+      "name": "Розсіяти магію (Dispel Magic)",
+      "school": "Перетворення",
+      "level": 3,
+      "casting_time": "1 дія",
+      "range": "120 футів",
+      "components": "V, S",
+      "duration": "Миттєво",
+      "description": "Скасовує будь-який активний магічний ефект на цілі. Закляття 4+ рівня — потрібна перевірка на Arcana (DC 10 + рівень закляття)."
+    },
+    {
+      "name": "Жах (Fear)",
+      "school": "Ілюзія",
+      "level": 3,
+      "casting_time": "1 дія",
+      "range": "Self (30-foot cone)",
+      "components": "V, S, M",
+      "duration": "Концентрація, до 1 хв",
+      "description": "Всі істоти в конусі 30 футів роблять WIS saving throw. При провалі — злякані та тікають."
+    },
+    {
+      "name": "Невидимість (Invisibility)",
+      "school": "Ілюзія",
+      "level": 2,
+      "casting_time": "1 дія",
+      "range": "Touch",
+      "components": "V, S, M",
+      "duration": "Концентрація, до 1 год",
+      "description": "Одна істота стає невидимою. Ефект спадає якщо ціль атакує або використовує закляття."
+    }
+  ],
+  "invocations": [
+    { "name": "Підступний удар (Thirsting Blade)", "desc": "Ти можеш атакувати двічі за допомогою Пакт зброї замість одного разу." },
+    { "name": "Маска багатьох обличь (Mask of Many Faces)", "desc": "Ти можеш використовувати Disguise Self безкоштовно, без витрати слоту." },
+    { "name": "Очі рунної вартіони (Eyes of the Rune Keeper)", "desc": "Ти можеш читати будь-який письмовий текст." }
+  ]
+}

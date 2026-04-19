@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Діоніс — Кампанія</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+
+  <div class="page">
+    <div class="hero">
+      <div class="page-title hero-title">Діоніс</div>
+      <div class="hero-subtitle">Чаклун Архфеї · Пакт Зброї · Рівень 5</div>
+
+      <div class="status-bar" id="status-bar">
+        <div class="status-pill">
+          <span class="pill-label">День пригод</span>
+          <span class="pill-value" id="status-day">—</span>
+        </div>
+        <div class="status-pill">
+          <span class="pill-label">Локація</span>
+          <span class="pill-value" id="status-location">—</span>
+        </div>
+        <div class="status-pill">
+          <span class="pill-label">HP</span>
+          <span class="pill-value" id="status-hp" style="color:var(--crimson-l)">—</span>
+        </div>
+        <div class="status-pill">
+          <span class="pill-label">AC</span>
+          <span class="pill-value" id="status-ac" style="color:var(--gold-light)">—</span>
+        </div>
+        <div class="status-pill">
+          <span class="pill-label">Рівень</span>
+          <span class="pill-value" id="status-level">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-cards">
+      <a class="nav-card" href="character.html">
+        <div class="nav-card-icon">🧙</div>
+        <div class="nav-card-title">Персонаж</div>
+        <div class="nav-card-desc">Характеристики, скіли, риси</div>
+      </a>
+      <a class="nav-card" href="inventory.html">
+        <div class="nav-card-icon">🎒</div>
+        <div class="nav-card-title">Інвентар</div>
+        <div class="nav-card-desc">Спорядження та гаманець</div>
+      </a>
+      <a class="nav-card" href="spells.html">
+        <div class="nav-card-icon">✨</div>
+        <div class="nav-card-title">Закляття</div>
+        <div class="nav-card-desc">Відомі закляття та слоти</div>
+      </a>
+      <a class="nav-card" href="npcs.html">
+        <div class="nav-card-icon">👥</div>
+        <div class="nav-card-title">Персонажі</div>
+        <div class="nav-card-desc">Союзники, нейтрали, вороги</div>
+      </a>
+      <a class="nav-card" href="journal.html">
+        <div class="nav-card-icon">📖</div>
+        <div class="nav-card-title">Щоденник</div>
+        <div class="nav-card-desc">Хроніка пригод</div>
+      </a>
+      <a class="nav-card" href="admin.html" style="border-color:var(--crimson);opacity:0.6">
+        <div class="nav-card-icon">⚙️</div>
+        <div class="nav-card-title">Адмін</div>
+        <div class="nav-card-desc">Редагування даних</div>
+      </a>
+    </div>
+
+    <div class="divider">Останній запис щоденника</div>
+
+    <div id="last-entry"></div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('index.html');
+
+    async function init() {
+      const [char, journal] = await Promise.all([
+        loadJSON('data/character.json'),
+        loadJSON('data/journal.json')
+      ]);
+
+      document.getElementById('status-day').textContent = journal[0]?.day ?? '—';
+      document.getElementById('status-location').textContent = journal[0]?.location?.split('→').pop().trim() ?? '—';
+      document.getElementById('status-hp').textContent = char.hp + ' / ' + char.hp_max;
+      document.getElementById('status-ac').textContent = char.ac;
+      document.getElementById('status-level').textContent = char.level;
+
+      const e = journal[0];
+      if (e) {
+        document.getElementById('last-entry').innerHTML = `
+          <div class="journal-entry">
+            <div class="journal-header">
+              <span class="journal-day">День ${e.day}</span>
+              <span class="journal-location">📍 ${e.location}</span>
+              <span class="journal-date-real">${e.date_real}</span>
+            </div>
+            <div class="journal-summary">${e.summary}</div>
+            ${e.next_steps ? `<div class="journal-next">▶ ${e.next_steps}</div>` : ''}
+          </div>`;
+      }
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>
