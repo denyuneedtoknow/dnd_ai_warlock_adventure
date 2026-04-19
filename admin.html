@@ -48,6 +48,7 @@
         <button class="admin-tab" data-tab="inventory">Інвентар</button>
         <button class="admin-tab" data-tab="npcs">NPC</button>
         <button class="admin-tab" data-tab="character">Персонаж</button>
+        <button class="admin-tab" data-tab="jsoneditor">JSON</button>
       </div>
 
       <!-- JOURNAL TAB -->
@@ -190,6 +191,43 @@
           </div>
         </div>
         <button class="btn btn-primary" onclick="saveCharStats()">Зберегти</button>
+      </div>
+
+      <!-- JSON EDITOR TAB -->
+      <div class="admin-panel" id="tab-jsoneditor">
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:1rem">
+          Вставляй згенерований JSON прямо сюди — він замінить повний вміст файлу в GitHub.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Файл</label>
+          <select class="form-select" id="json-file-select" onchange="loadJsonForEdit()">
+            <option value="data/character.json">character.json — Лист персонажа</option>
+            <option value="data/spells.json">spells.json — Закляття</option>
+            <option value="data/inventory.json">inventory.json — Інвентар</option>
+            <option value="data/npcs.json">npcs.json — NPC</option>
+            <option value="data/journal.json">journal.json — Щоденник</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-secondary" onclick="loadJsonForEdit()">↺ Завантажити поточний</button>
+          <button class="btn btn-secondary" onclick="formatJson()">{ } Форматувати</button>
+          <span id="json-status" style="font-size:.8rem;color:var(--text-muted)"></span>
+        </div>
+
+        <textarea
+          class="form-textarea"
+          id="json-editor"
+          style="min-height:400px;font-family:monospace;font-size:.78rem;line-height:1.5"
+          placeholder="Вставте JSON або натисніть «Завантажити поточний»"
+          oninput="validateJson()"
+        ></textarea>
+
+        <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveJsonFile()">💾 Зберегти в GitHub</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('json-editor').value=''">Очистити</button>
+        </div>
       </div>
 
     </div>
