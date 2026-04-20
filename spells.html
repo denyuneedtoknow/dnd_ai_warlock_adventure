@@ -37,6 +37,10 @@
     <div class="spell-section-title">Відомі закляття</div>
     <div class="spell-cards" id="spells-known"></div>
 
+    <!-- RITUALS -->
+    <div class="spell-section-title">Ритуали</div>
+    <div class="feature-list" id="ritual-spells"></div>
+
     <!-- INVOCATIONS -->
     <div class="spell-section-title">Таємні закликання (Eldritch Invocations)</div>
     <div class="feature-list" id="invocations"></div>
@@ -107,6 +111,16 @@
         header.appendChild(badge);
         knownEl.appendChild(card);
       });
+
+      const rituals = s.ritual_spells || [];
+      document.getElementById('ritual-spells').innerHTML = rituals.length
+        ? rituals.map(r =>
+            `<div class="feature-item">
+              <div class="feature-name">${r.name}</div>
+              <div class="feature-desc">${r.desc}</div>
+            </div>`
+          ).join('')
+        : '<p style="color:var(--text-muted);font-size:.85rem;margin:0">У JSON немає ритуалів (<code>ritual_spells</code>).</p>';
 
       // Invocations
       document.getElementById('invocations').innerHTML = s.invocations.map(inv =>
