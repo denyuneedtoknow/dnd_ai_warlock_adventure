@@ -311,3 +311,92 @@ function adminInit() {
     showAdminSection();
   }
 }
+
+// ─── JSON EDITOR ──────────────────────────────────────────────────────────────
+async function loadJsonForEdit() {
+  const path = document.getElementById('json-file-select').value;
+  const statusEl = document.getElementById('json-status');
+  statusEl.textContent = 'Завантажую...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  try {
+    const file = await ghGet(path);
+    const decoded = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    const parsed = JSON.parse(decoded);
+    document.getElementById('json-editor').value = JSON.stringify(parsed, null, 2);
+    window._jsonEditorSha = file.sha;
+    statusEl.textContent = '✓ Завантажено';
+    statusEl.style.color = 'var(--green-l)';
+  } catch (e) {
+    statusEl.textContent = 'Помилка: ' + e.message;
+    statusEl.style.color = 'var(--crimson-l)';
+  }
+}
+
+function validateJson() {
+  const statusEl = document.getElementById('json-status');
+  const val = document.getElementById('json-editor').value.trim();
+  if (!val) { statusEl.textContent = ''; return; }
+  try {
+    JSON.parse(val);
+    statusEl.textContent = '✓ JSON валідний';
+    statusEl.style.color = 'var(--green-l)';
+  } catch (e) {
+    statusEl.textContent = '✗ ' + e.message;
+    statusEl.style.color = 'var(--crimson-l)';
+  }
+}
+
+function formatJson() {
+  const el = document.getElementById('json-editor');
+  try {
+    el.value = JSON.stringify(JSON.parse(el.value), null, 2);
+    validateJson();
+  } catch (e) {
+    notify('Невірний JSON — спочатку виправ помилки', true);
+  }
+}
+
+async function saveJsonFile() {
+  const path = document.getElementById('json-file-select').value;
+  const val = document.getElementById('json-editor').value.trim();
+  const statusEl = document.getElementById('json-status');
+
+  if (!val) { notify('Редактор порожній', true); return; }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(val);
+  } catch (e) {
+    notify('Невірний JSON: ' + e.message, true);
+    return;
+  }
+
+  const fileName = path.split('/').pop();
+  const sha = window._jsonEditorSha || null;
+
+  statusEl.textContent = 'Зберігаю...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  try {
+    await ghPut(path, parsed, `✏️ Оновлено ${fileName} через JSON-редактор`, sha);
+    const file = await ghGet(path);
+    window._jsonEditorSha = file.sha;
+    const key = fileName.replace('.json', '');
+    if (state[key]) {
+      state[key].data = parsed;
+      state[key].sha = file.sha;
+      if (key === 'inventory') fillInventoryForm();
+      if (key === 'character') fillCharForm();
+      if (key === 'npcs') renderNpcList();
+      if (key === 'journal') renderJournalList();
+    }
+    statusEl.textContent = '✓ Збережено';
+    statusEl.style.color = 'var(--green-l)';
+    notify(`${fileName} збережено ✓`);
+  } catch (e) {
+    statusEl.textContent = 'Помилка збереження';
+    statusEl.style.color = 'var(--crimson-l)';
+    notify('Помилка: ' + e.message, true);
+  }
+}
