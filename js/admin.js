@@ -42,6 +42,20 @@ async function ghGet(path) {
   return res.json();
 }
 
+/** Поточний blob sha для шляху, або null якщо файлу ще нема (створення). */
+async function ghGetBlobSha(path) {
+  const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, {
+    headers: {
+      'Authorization': 'Bearer ' + getToken(),
+      'Accept': 'application/vnd.github+json',
+    }
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('GH GET failed: ' + res.status);
+  const file = await res.json();
+  return file.sha;
+}
+
 async function ghPut(path, content, message, sha) {
   const body = {
     message,
@@ -60,8 +74,15 @@ async function ghPut(path, content, message, sha) {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'GH PUT failed');
+    let detail = 'GH PUT failed: ' + res.status;
+    try {
+      const err = await res.json();
+      if (err.message) detail = err.message;
+      if (Array.isArray(err.errors) && err.errors.length) {
+        detail += ' — ' + err.errors.map(e => e.message || JSON.stringify(e)).join('; ');
+      }
+    } catch { /* ignore */ }
+    throw new Error(detail);
   }
   return res.json();
 }
@@ -373,7 +394,12 @@ async function saveJsonFile() {
   }
 
   const fileName = path.split('/').pop();
-  const sha = window._jsonEditorSha || null;
+  const stateKey = fileName.replace(/\.json$/, '');
+  let sha =
+    window._jsonEditorSha ||
+    (state[stateKey] && state[stateKey].sha) ||
+    null;
+  if (!sha) sha = await ghGetBlobSha(path);
 
   statusEl.textContent = 'Зберігаю...';
   statusEl.style.color = 'var(--text-muted)';
