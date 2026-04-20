@@ -1,30 +1,32 @@
 {
-  "name": "Діоніс",
-  "race": "Людина",
-  "class": "Чаклун (Warlock)",
-  "subclass": "Архфея",
+  "name": "Діоніс (Бахус Валторіан)",
+  "race": "Людина (Варіант)",
+  "class": "Варлок (Архіфея)",
+  "subclass": "Архіфея",
   "level": 5,
-  "xp": 6500,
+  "xp": 0,
   "xp_next": 14000,
-  "background": "Відступник",
-  "alignment": "Хаотично Нейтральний",
-  "patron": "Леді Шипів",
+  "background": "Мудрець",
+  "alignment": "—",
+  "patron": "Леді Шипів — Безприхильна Архіфея",
   "proficiency_bonus": 3,
   "hp": 38,
   "hp_max": 38,
   "hp_temp": 0,
-  "ac": 13,
+  "ac": 14,
   "speed": 30,
-  "initiative": 2,
-  "passive_perception": 13,
+  "initiative": 1,
+  "passive_perception": 10,
+  "spell_save_dc": 14,
+  "spell_attack_bonus": 6,
   "inspiration": false,
   "stats": {
-    "STR": 10,
-    "DEX": 14,
-    "CON": 14,
+    "STR": 8,
+    "DEX": 13,
+    "CON": 15,
     "INT": 12,
-    "WIS": 13,
-    "CHA": 18
+    "WIS": 10,
+    "CHA": 17
   },
   "saving_throws": {
     "STR": false,
@@ -35,31 +37,166 @@
     "CHA": true
   },
   "skills": [
-    { "name": "Акробатика",       "attr": "DEX", "proficient": false, "expertise": false },
-    { "name": "Аналіз тварин",    "attr": "WIS", "proficient": false, "expertise": false },
-    { "name": "Атлетика",         "attr": "STR", "proficient": false, "expertise": false },
-    { "name": "Виступ",           "attr": "CHA", "proficient": false, "expertise": false },
-    { "name": "Виживання",        "attr": "WIS", "proficient": false, "expertise": false },
-    { "name": "Залякування",      "attr": "CHA", "proficient": true,  "expertise": false },
-    { "name": "Історія",          "attr": "INT", "proficient": false, "expertise": false },
-    { "name": "Магія",            "attr": "INT", "proficient": true,  "expertise": false },
-    { "name": "Медицина",         "attr": "WIS", "proficient": false, "expertise": false },
-    { "name": "Обман",            "attr": "CHA", "proficient": true,  "expertise": false },
-    { "name": "Переконання",      "attr": "CHA", "proficient": true,  "expertise": false },
-    { "name": "Природа",          "attr": "INT", "proficient": false, "expertise": false },
-    { "name": "Проникливість",    "attr": "WIS", "proficient": false, "expertise": false },
-    { "name": "Релігія",          "attr": "INT", "proficient": false, "expertise": false },
-    { "name": "Спритність рук",   "attr": "DEX", "proficient": false, "expertise": false },
-    { "name": "Сприйняття",       "attr": "WIS", "proficient": true,  "expertise": false },
-    { "name": "Стелс",            "attr": "DEX", "proficient": false, "expertise": false },
-    { "name": "Таємниче знання",  "attr": "INT", "proficient": false, "expertise": false }
+    {
+      "name": "Акробатика",
+      "attr": "DEX",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Поводж. з тваринами",
+      "attr": "WIS",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Атлетика",
+      "attr": "STR",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Проникливість",
+      "attr": "WIS",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Залякування",
+      "attr": "CHA",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Таємні Знання",
+      "attr": "INT",
+      "proficient": true,
+      "expertise": false
+    },
+    {
+      "name": "Історія",
+      "attr": "INT",
+      "proficient": true,
+      "expertise": false
+    },
+    {
+      "name": "Медицина",
+      "attr": "WIS",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Природа",
+      "attr": "INT",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Сприйняття",
+      "attr": "WIS",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Виступ",
+      "attr": "CHA",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Переконання",
+      "attr": "CHA",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Релігія",
+      "attr": "INT",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Спритність рук",
+      "attr": "DEX",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Непомітність",
+      "attr": "DEX",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Виживання",
+      "attr": "WIS",
+      "proficient": false,
+      "expertise": false
+    },
+    {
+      "name": "Обман",
+      "attr": "CHA",
+      "proficient": true,
+      "expertise": false
+    },
+    {
+      "name": "Розслідування",
+      "attr": "INT",
+      "proficient": true,
+      "expertise": false
+    }
   ],
   "features": [
-    { "name": "Темне благословення (Dark One's Blessing)", "desc": "Коли ти зменшуєш ворога до 0 HP, ти отримуєш temporary HP рівні CHA modifier + рівень чаклуна." },
-    { "name": "Пакт зброї (Pact of the Blade)", "desc": "Ти можеш використати свою дію щоб створити зброю пакту. Вважається магічною зброєю для подолання стійкостей." },
-    { "name": "Підступний удар (Thirsting Blade)", "desc": "Invocation: дозволяє атакувати двічі замість одного разу коли використовуєш Пакт зброї." },
-    { "name": "Маска багатьох обличь (Mask of Many Faces)", "desc": "Invocation: ти можеш використовувати Disguise Self без витрати слоту заклять." },
-    { "name": "Очі рунної вартіони (Eyes of the Rune Keeper)", "desc": "Invocation: ти можеш читати будь-який письмовий текст." },
-    { "name": "Патрон: Леді Шипів", "desc": "Архфея Unseelie Court. Дала силу через пакт. Очікує виконання незрозумілих зобов'язань." }
+    {
+      "name": "Присутність Фей (1/короткий відпочинок)",
+      "desc": "Дія, куб 3 метри. Складність 14 МДР. Всі істоти в зоні — зачаровані або наляканий на 1 раунд."
+    },
+    {
+      "name": "Магія Пакту — 2 осередки 3-го рівня",
+      "desc": "Відновлюються на короткому або тривалому відпочинку. Усі закляття кастуються через осередки 3-го рівня."
+    },
+    {
+      "name": "Дар Пакту: Пакт Книги — Ґрімуар Троянди",
+      "desc": "Обкладинка з живої кори, троянди на корінці, сторінки з листя. +3 кантріпи від будь-якого класу. Ритуальне заклинання через Воління «Книга Давніх Таємниць»."
+    },
+    {
+      "name": "Таємне Воління: Болісний Постріл",
+      "desc": "Потойбічний Постріл додає +ХАР (+3) до урону на кожен промінь."
+    },
+    {
+      "name": "Таємне Воління: Книга Давніх Таємниць",
+      "desc": "Ритуальне заклинання з Ґрімуару Троянди. Можна вчити нові ритуальні закляття — 2 год + 50 зм за рівень."
+    },
+    {
+      "name": "Таємне Воління: Відштовхуючий Постріл (рівень 5)",
+      "desc": "Коли Потойбічний Постріл влучає — обираєш один промінь. Ціль відлітає на 3 метри від тебе."
+    },
+    {
+      "name": "Здібність: Торкнутий Дивокраєм (рівень 4)",
+      "desc": "+1 ХАР (16→17). Безкоштовно 1/тривалий відпочинок: Містичний Крок (бонусна дія, телепорт 9 м) та Благословіння (3 цілі, +1d4 на атаки/рятівні, 1 хв, концентрація)."
+    },
+    {
+      "name": "Фамільяр: Шип 🐕",
+      "desc": "Фейський дух-компаньйон. КЗ 12, ХП 15. Телепатичний зв'язок (30 м), спільні відчуття, доставка заклять дотику. Фейський стрибок 1/день — телепортується до тебе в небезпеці."
+    },
+    {
+      "name": "Передісторія: Мудрець — Дослідник",
+      "desc": "Знаєш де знайти інформацію: бібліотеки, архіви, вчені мудреці."
+    }
+  ],
+  "titles": [
+    "Герой Кам'янки",
+    "Герой Ліссового Лісу",
+    "Рятівник Тіньової Галявини",
+    "Благословенний Леді Шипів",
+    "Друг спрайтів",
+    "Побратим ельфів",
+    "Переможець Мордрена"
+  ],
+  "languages": [
+    "Загальна",
+    "Сільван",
+    "Небесна",
+    "Мова Тварин"
   ]
 }
