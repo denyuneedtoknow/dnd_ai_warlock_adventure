@@ -378,6 +378,31 @@ function formatJson() {
   }
 }
 
+async function pasteJsonFromClipboard() {
+  const el = document.getElementById('json-editor');
+
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    notify('Буфер обміну недоступний у цьому браузері', true);
+    return;
+  }
+
+  try {
+    let text = await navigator.clipboard.readText();
+    if (!text.trim()) {
+      notify('Буфер обміну порожній', true);
+      return;
+    }
+
+    // Часто JSON копіюють у markdown-блоках ```json ... ```
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    el.value = text.trim();
+    validateJson();
+    notify('JSON вставлено з буфера ✓');
+  } catch (e) {
+    notify('Не вдалося прочитати буфер обміну', true);
+  }
+}
+
 async function saveJsonFile() {
   const path = document.getElementById('json-file-select').value;
   const val = document.getElementById('json-editor').value.trim();
