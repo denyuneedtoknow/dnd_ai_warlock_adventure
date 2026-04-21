@@ -86,20 +86,20 @@
       offhand: { icon: '🛡', label: 'Ліва рука'},
     };
 
-    const tooltip = document.getElementById('tooltip');
+    const invTooltipEl = document.getElementById('tooltip');
 
     function showTip(item, el) {
-      tooltip.innerHTML = `
+      invTooltipEl.innerHTML = `
         <div class="tooltip-name">${item.name}</div>
         <div class="tooltip-type">${item.type || ''}${item.rarity ? ' · ' + item.rarity : ''}</div>
         <div class="tooltip-desc">${item.description || ''}</div>`;
-      tooltip.classList.add('visible');
+      invTooltipEl.classList.add('visible');
       const r = el.getBoundingClientRect();
-      tooltip.style.left = (r.right + 8) + 'px';
-      tooltip.style.top  = r.top + 'px';
+      invTooltipEl.style.left = (r.right + 8) + 'px';
+      invTooltipEl.style.top  = r.top + 'px';
     }
 
-    function hideTip() { tooltip.classList.remove('visible'); }
+    function hideTip() { invTooltipEl.classList.remove('visible'); }
 
     document.addEventListener('click', e => {
       if (!e.target.closest('.equip-slot, .backpack-item')) hideTip();
@@ -154,7 +154,7 @@
 
       // Backpack
       const bp = document.getElementById('backpack');
-      const BACKPACK_SIZE = 24;
+      const BACKPACK_SIZE = 48;
       bp.innerHTML = '';
       for (let i = 0; i < BACKPACK_SIZE; i++) {
         const item = inv.backpack[i];
