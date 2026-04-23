@@ -141,6 +141,7 @@ async function addJournalEntry() {
   state.journal.data.unshift(entry);
 
   try {
+    await createJournalBackup(); // Бекап попередньої версії
     await ghPut('data/journal.json', state.journal.data,
       `📖 Щоденник: День ${day} — ${location}`, state.journal.sha);
     // Reload sha
@@ -178,6 +179,7 @@ async function deleteJournalEntry(index) {
   if (!confirm('Видалити запис?')) return;
   const removed = state.journal.data.splice(index, 1)[0];
   try {
+    await createJournalBackup(); // Бекап попередньої версії
     await ghPut('data/journal.json', state.journal.data,
       `🗑 Видалено запис Дня ${removed.day}`, state.journal.sha);
     await loadFile('journal', 'data/journal.json');
@@ -185,6 +187,171 @@ async function deleteJournalEntry(index) {
     notify('Запис видалено');
   } catch (e) {
     state.journal.data.splice(index, 0, removed);
+    notify('Помилка: ' + e.message, true);
+  }
+}
+
+// ─── JOURNAL BACKUP ───────────────────────────────────────────────────────────
+async function createJournalBackup() {
+  if (!state.journal.data || state.journal.data.length === 0) {
+    notify('Немає даних для бекапу', true);
+    return;
+  }
+
+  try {
+    await ghPut('data/journal_backup.json', state.journal.data,
+      `💾 Створено бекап щоденника (${state.journal.data.length} записів)`, null);
+    notify(`Бекап створено: data/journal_backup.json (${state.journal.data.length} записів) ✓`);
+  } catch (e) {
+    notify('Не вдалося створити бекап: ' + e.message, true);
+  }
+}
+
+async function restoreFromBackup() {
+  if (!confirm('Відновити щоденник з бекапу? Поточна версія буде повністю замінена.')) {
+    return;
+  }
+
+  try {
+    const backupFile = await ghGet('data/journal_backup.json');
+    const decoded = decodeURIComponent(escape(atob(backupFile.content.replace(/\n/g, ''))));
+    const backupData = JSON.parse(decoded);
+
+    await ghPut('data/journal.json', backupData,
+      `↩ Відновлено з бекапу (${backupData.length} записів)`, state.journal.sha);
+
+    await loadFile('journal', 'data/journal.json');
+    renderJournalList();
+    notify(`Відновлено ${backupData.length} записів з бекапу ✓`);
+  } catch (e) {
+    notify('Не вдалося відновити з бекапу. Перевірте, чи існує journal_backup.json. Помилка: ' + e.message, true);
+  }
+}
+
+// ─── JOURNAL IMPORT ───────────────────────────────────────────────────────────
+async function pasteJournalImport() {
+  const el = document.getElementById('journal-import-json');
+  if (!el) return;
+
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    notify('Буфер обміну недоступний у цьому браузері', true);
+    return;
+  }
+  try {
+    let text = await navigator.clipboard.readText();
+    if (!text.trim()) {
+      notify('Буфер обміну порожній', true);
+      return;
+    }
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    el.value = text.trim();
+    notify('JSON вставлено в поле імпорту щоденника ✓');
+  } catch (e) {
+    notify('Не вдалося прочитати буфер обміну', true);
+  }
+}
+
+async function importJournalEntries() {
+  const el = document.getElementById('journal-import-json');
+  const modeEl = document.getElementById('journal-import-dup-mode');
+  if (!el) return;
+  const dupMode = modeEl && modeEl.value === 'update' ? 'update' : 'skip';
+
+  let text = el.value.trim();
+  if (!text) { notify('Встав JSON-масив записів щоденника', true); return; }
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+  let arr;
+  try { arr = JSON.parse(text); } catch (e) {
+    notify('Невірний JSON: ' + e.message, true);
+    return;
+  }
+  if (!Array.isArray(arr)) { notify('Очікується масив [ ... ]', true); return; }
+
+  const backup = JSON.parse(JSON.stringify(state.journal.data));
+  const daysSeen = new Set(state.journal.data.map(e => e.day));
+  const processedDays = new Set();
+
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+  const warnLines = [];
+
+  // Обробляємо у зворотному порядку, щоб нові записи залишались зверху
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const raw = arr[i];
+    if (!raw || typeof raw !== 'object') continue;
+
+    const day = parseInt(raw.day);
+    if (!day || isNaN(day)) {
+      skipped++;
+      continue;
+    }
+
+    const key = day;
+    if (processedDays.has(key)) {
+      skipped++;
+      warnLines.push(`Повтор дня ${day} у файлі`);
+      continue;
+    }
+
+    const existingIndex = state.journal.data.findIndex(e => e.day === day);
+    const entry = {
+      day: day,
+      date_real: raw.date_real || '',
+      location: String(raw.location || '').trim(),
+      summary: String(raw.summary || '').trim()
+    };
+    if (raw.next_steps) entry.next_steps = String(raw.next_steps).trim();
+
+    if (existingIndex >= 0) {
+      processedDays.add(key);
+      if (dupMode === 'update') {
+        state.journal.data[existingIndex] = entry;
+        updated++;
+      } else {
+        skipped++;
+        warnLines.push(`День ${day} вже існує (пропущено)`);
+      }
+      continue;
+    }
+
+    // Додаємо на початок (newest first)
+    state.journal.data.unshift(entry);
+    added++;
+    processedDays.add(key);
+  }
+
+  const changed = added + updated;
+  if (!changed) {
+    state.journal.data = backup;
+    if (skipped === 0) {
+      notify('Немає валідних записів (потрібен day у кожному елементі)', true);
+    } else {
+      const detail = warnLines.length ? ' — ' + warnLines.slice(0, 4).join(' · ') : '';
+      notify(`Змін не зроблено. Пропущено ${skipped} записів${detail}`, true);
+    }
+    return;
+  }
+
+  const msg = `Імпорт щоденника: +${added} нових` +
+    (updated ? `, оновлено ${updated}` : '') +
+    (skipped ? `; пропущено ${skipped}` : '');
+
+  try {
+    await createJournalBackup(); // Бекап попередньої версії
+    await ghPut('data/journal.json', state.journal.data,
+      `📖 Імпорт ${added + updated} записів щоденника`, state.journal.sha);
+    await loadFile('journal', 'data/journal.json');
+    renderJournalList();
+    el.value = '';
+    if (warnLines.length) {
+      notify(msg + ' — ' + warnLines.slice(0, 3).join(' · ') + (warnLines.length > 3 ? ' …' : ''));
+    } else {
+      notify(msg + ' ✓');
+    }
+  } catch (e) {
+    state.journal.data = backup;
     notify('Помилка: ' + e.message, true);
   }
 }
@@ -575,6 +742,11 @@ async function saveJsonFile() {
   statusEl.style.color = 'var(--text-muted)';
 
   try {
+    // Автоматичний бекап перед зміною journal
+    if (path.includes('journal.json') && state.journal && state.journal.data && state.journal.data.length > 0) {
+      await createJournalBackup();
+    }
+
     await ghPut(path, parsed, `✏️ Оновлено ${fileName} через JSON-редактор`, sha);
     // reload sha
     const file = await ghGet(path);

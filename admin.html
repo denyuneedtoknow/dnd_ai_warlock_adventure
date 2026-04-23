@@ -65,6 +65,7 @@
             <option value="data/inventory.json">inventory.json — Інвентар</option>
             <option value="data/npcs.json">npcs.json — NPC</option>
             <option value="data/journal.json">journal.json — Щоденник</option>
+            <option value="data/journal_backup.json">journal_backup.json — Бекап щоденника (read-only)</option>
           </select>
         </div>
 
@@ -122,6 +123,41 @@
         </div>
 
         <button class="btn btn-primary" onclick="addJournalEntry()">Додати запис</button>
+
+        <div class="divider">Масовий імпорт записів</div>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:.75rem">
+          JSON-масив записів щоденника. Записи <strong>додаються на початок</strong> (нові зверху).
+          Якщо день уже існує — див. опцію нижче.
+        </p>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label class="form-label" for="journal-import-dup-mode">Якщо день уже є в щоденнику</label>
+          <select class="form-select" id="journal-import-dup-mode">
+            <option value="skip" selected>Пропустити (не змінювати)</option>
+            <option value="update">Оновити існуючий запис</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn btn-secondary" onclick="pasteJournalImport()">📋 Вставити з буфера</button>
+        </div>
+        <textarea
+          class="form-textarea"
+          id="journal-import-json"
+          style="min-height:220px;font-family:monospace;font-size:.78rem"
+          placeholder='[
+  {
+    "day": 46,
+    "date_real": "2026-04-23",
+    "location": "Невервінтер, Академія",
+    "summary": "Зустріч з архмагом Сіланом Хартвігом. Обговорили жезл Мордрена.",
+    "next_steps": "Дослідити артефакт у бібліотеці Академії."
+  }
+]'
+        ></textarea>
+        <div style="margin-top:.75rem;display:flex;gap:.75rem;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" onclick="importJournalEntries()">Імпортувати записи</button>
+          <button type="button" class="btn btn-secondary" onclick="createJournalBackup()">💾 Створити бекап</button>
+          <button type="button" class="btn btn-secondary" onclick="restoreFromBackup()">↩ Відновити з бекапу</button>
+        </div>
 
         <div class="divider">Існуючі записи</div>
         <div id="journal-entries-list"></div>
