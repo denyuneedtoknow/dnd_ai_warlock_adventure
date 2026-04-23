@@ -199,8 +199,9 @@ async function createJournalBackup() {
   }
 
   try {
+    const sha = await ghGetBlobSha('data/journal_backup.json');
     await ghPut('data/journal_backup.json', state.journal.data,
-      `💾 Створено бекап щоденника (${state.journal.data.length} записів)`, null);
+      `💾 Створено бекап щоденника (${state.journal.data.length} записів)`, sha);
     notify(`Бекап створено: data/journal_backup.json (${state.journal.data.length} записів) ✓`);
   } catch (e) {
     notify('Не вдалося створити бекап: ' + e.message, true);
