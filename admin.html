@@ -191,6 +191,32 @@
         </div>
         <button class="btn btn-primary" onclick="addNpc()">Додати NPC</button>
 
+        <div class="divider">Імпорт кількох NPC</div>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:.75rem">
+          JSON-масив об'єктів: нові <strong>дописуються</strong> до списку. Пара <code>name</code> + <code>role</code> (після
+          нормалізації пробілів і регістру) вважається одним персонажем: дублікати в файлі пропускаються, якщо такий вже
+          є в списку — див. опцію нижче. Для нового NPC при зайнятому <code>id</code> додається суфікс.
+        </p>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label class="form-label" for="npc-import-dup-mode">Якщо name + role уже є в списку</label>
+          <select class="form-select" id="npc-import-dup-mode">
+            <option value="skip" selected>Пропустити (дублікат не додаємо)</option>
+            <option value="update">Оновити існуючий запис з JSON</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn btn-secondary" onclick="pasteNpcImport()">Вставити з буфера</button>
+        </div>
+        <textarea
+          class="form-textarea"
+          id="npc-import-json"
+          style="min-height:200px;font-family:monospace;font-size:.78rem"
+          placeholder='[\n  { "name": "Сілан Хартвіг", "role": "Архмаг", "relation": "ally" },\n  { "name": "Міра", "role": "Капітан варти" }\n]'
+        ></textarea>
+        <div style="margin-top:.75rem">
+          <button type="button" class="btn btn-primary" onclick="importNpcs()">Додати всіх (імпорт)</button>
+        </div>
+
         <div class="divider">Список NPC</div>
         <div id="npc-list"></div>
       </div>

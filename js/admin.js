@@ -258,6 +258,175 @@ async function addNpc() {
   }
 }
 
+const NPC_RELATION_SET = new Set(['ally', 'neutral', 'hostile']);
+
+function makeNpcIdFromName(name) {
+  return name.toLowerCase().replace(/\s+/g, '_');
+}
+
+function nextUniqueId(baseId, usedIds) {
+  let id = baseId;
+  let n = 0;
+  while (usedIds.has(id)) {
+    n++;
+    id = `${baseId}_${n}`;
+  }
+  usedIds.add(id);
+  return id;
+}
+
+function parseNpcImportRaw(raw) {
+  if (raw == null || typeof raw !== 'object') return null;
+  const name = String(raw.name ?? '').replace(/\s+/g, ' ').trim();
+  const role = String(raw.role ?? '').replace(/\s+/g, ' ').trim();
+  if (!name || !role) return null;
+
+  let relation = (raw.relation != null && String(raw.relation).toLowerCase().trim()) || 'neutral';
+  if (!NPC_RELATION_SET.has(relation)) relation = 'neutral';
+
+  const avatar = (raw.avatar != null && String(raw.avatar).trim()) || '👤';
+  const location = (raw.location != null && String(raw.location).trim()) || '';
+  const description = (raw.description != null ? String(raw.description) : '').trim();
+
+  return { name, role, relation, avatar, location, description };
+}
+
+function npcIdentityKey(name, role) {
+  const n = String(name).replace(/\s+/g, ' ').trim().toLowerCase();
+  const r = String(role).replace(/\s+/g, ' ').trim().toLowerCase();
+  return `${n}\u0000${r}`;
+}
+
+function findNpcIndexByIdentity(data, key) {
+  return data.findIndex(n => npcIdentityKey(n.name, n.role) === key);
+}
+
+async function pasteNpcImport() {
+  const el = document.getElementById('npc-import-json');
+  if (!el) return;
+
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    notify('Буфер обміну недоступний у цьому браузері', true);
+    return;
+  }
+  try {
+    let text = await navigator.clipboard.readText();
+    if (!text.trim()) {
+      notify('Буфер обміну порожній', true);
+      return;
+    }
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    el.value = text.trim();
+    notify('JSON вставлено в поле імпорту ✓');
+  } catch (e) {
+    notify('Не вдалося прочитати буфер обміну', true);
+  }
+}
+
+async function importNpcs() {
+  const el = document.getElementById('npc-import-json');
+  const modeEl = document.getElementById('npc-import-dup-mode');
+  if (!el) return;
+  const dupMode = modeEl && modeEl.value === 'update' ? 'update' : 'skip';
+
+  let text = el.value.trim();
+  if (!text) { notify('Встав JSON-масив NPC', true); return; }
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+  let arr;
+  try { arr = JSON.parse(text); } catch (e) {
+    notify('Невірний JSON: ' + e.message, true);
+    return;
+  }
+  if (!Array.isArray(arr)) { notify('Очікується масив [ ... ]', true); return; }
+
+  const backup = JSON.parse(JSON.stringify(state.npcs.data));
+  const usedIds = new Set(state.npcs.data.map(n => n.id));
+  const keysSeen = new Set();
+
+  let added = 0;
+  let updated = 0;
+  let skippedInFile = 0;
+  let skippedInList = 0;
+  const warnLines = [];
+
+  for (const raw of arr) {
+    const parsed = parseNpcImportRaw(raw);
+    if (!parsed) continue;
+
+    const key = npcIdentityKey(parsed.name, parsed.role);
+    if (keysSeen.has(key)) {
+      skippedInFile++;
+      warnLines.push(`Повтор у файлі: ${parsed.name} — ${parsed.role}`);
+      continue;
+    }
+
+    const idx = findNpcIndexByIdentity(state.npcs.data, key);
+    if (idx >= 0) {
+      keysSeen.add(key);
+      if (dupMode === 'update') {
+        const id = state.npcs.data[idx].id;
+        state.npcs.data[idx] = { id, ...parsed };
+        updated++;
+      } else {
+        skippedInList++;
+        warnLines.push(`Вже в списку (пропущено): ${parsed.name} — ${parsed.role}`);
+      }
+      continue;
+    }
+
+    let baseId;
+    if (raw.id != null && String(raw.id).trim() !== '') {
+      baseId = String(raw.id).trim().toLowerCase().replace(/\s+/g, '_');
+    } else {
+      baseId = makeNpcIdFromName(parsed.name);
+    }
+    const id = nextUniqueId(baseId, usedIds);
+    state.npcs.data.push({ id, ...parsed });
+    added++;
+    keysSeen.add(key);
+  }
+
+  const changed = added + updated;
+  if (!changed) {
+    state.npcs.data = backup;
+    if (!skippedInFile && !skippedInList && !warnLines.length) {
+      notify('Немає валідних рядків (потрібні name і role у кожному елементі)', true);
+    } else {
+      const parts = [];
+      if (skippedInFile) parts.push(`повтор у файлі: ${skippedInFile}`);
+      if (skippedInList) parts.push(`вже в списку: ${skippedInList}`);
+      const detail = warnLines.length ? ' — ' + warnLines.slice(0, 5).join(' · ') + (warnLines.length > 5 ? ' …' : '') : '';
+      notify('Змін не зроблено. ' + parts.join(', ') + detail, true);
+    }
+    return;
+  }
+
+  const msg = `Імпорт: +${added} нових` + (updated ? `, оновлено ${updated}` : '') +
+    (skippedInFile || skippedInList
+      ? `; пропущено: ` +
+        [skippedInFile ? `у файлі ${skippedInFile}` : '', skippedInList ? `у списку ${skippedInList}` : '']
+          .filter(Boolean).join(', ')
+      : '');
+
+  try {
+    await ghPut('data/npcs.json', state.npcs.data,
+      `👤 Імпорт NPC: +${added}, оновлено ${updated}`, state.npcs.sha);
+    await loadFile('npcs', 'data/npcs.json');
+    renderNpcList();
+    el.value = '';
+    if (warnLines.length) {
+      const extra = warnLines.length > 3 ? ' …' : '';
+      notify(msg + ' — ' + warnLines.slice(0, 3).join(' · ') + extra);
+    } else {
+      notify(msg + ' ✓');
+    }
+  } catch (e) {
+    state.npcs.data = backup;
+    notify('Помилка: ' + e.message, true);
+  }
+}
+
 const RELATION_LABELS = { ally:'Союзник', neutral:'Нейтральний', hostile:'Ворог' };
 
 function renderNpcList() {
