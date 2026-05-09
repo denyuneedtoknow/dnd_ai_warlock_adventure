@@ -23,6 +23,11 @@
       <button class="filter-btn" data-filter="hostile">Вороги</button>
     </div>
 
+    <div class="npc-search-wrap">
+      <span class="npc-search-icon">🔍</span>
+      <input class="npc-search" id="npc-search" type="text" placeholder="Пошук за іменем або локацією…" autocomplete="off">
+    </div>
+
     <div class="npc-grid" id="npc-grid"></div>
   </div>
 
@@ -37,10 +42,23 @@
     };
 
     let allNpcs = [];
+    let activeFilter = 'all';
 
-    function renderNpcs(filter) {
-      const list = filter === 'all' ? allNpcs : allNpcs.filter(n => n.relation === filter);
-      document.getElementById('npc-grid').innerHTML = list.map(n => `
+    function renderNpcs() {
+      const query = document.getElementById('npc-search').value.trim().toLowerCase();
+      let list = activeFilter === 'all' ? allNpcs : allNpcs.filter(n => n.relation === activeFilter);
+      if (query) {
+        list = list.filter(n =>
+          n.name.toLowerCase().includes(query) ||
+          (n.location || '').toLowerCase().includes(query)
+        );
+      }
+      const grid = document.getElementById('npc-grid');
+      if (!list.length) {
+        grid.innerHTML = '<div class="npc-empty">Нікого не знайдено</div>';
+        return;
+      }
+      grid.innerHTML = list.map(n => `
         <div class="npc-card ${n.relation}">
           <div class="npc-card-top">
             <div class="npc-avatar">${n.avatar}</div>
@@ -62,13 +80,16 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        renderNpcs(btn.dataset.filter);
+        activeFilter = btn.dataset.filter;
+        renderNpcs();
       });
     });
 
+    document.getElementById('npc-search').addEventListener('input', renderNpcs);
+
     async function init() {
       allNpcs = await loadJSON('data/npcs.json');
-      renderNpcs('all');
+      renderNpcs();
     }
 
     init().catch(console.error);

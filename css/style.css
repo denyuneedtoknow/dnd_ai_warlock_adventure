@@ -804,6 +804,46 @@ nav {
   background: rgba(139, 105, 20, 0.1);
 }
 
+.npc-search-wrap {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.npc-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.npc-search {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.npc-search::placeholder { color: var(--text-muted); }
+
+.npc-search:focus { border-color: var(--gold); }
+
+.npc-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+  grid-column: 1 / -1;
+}
+
 .npc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
