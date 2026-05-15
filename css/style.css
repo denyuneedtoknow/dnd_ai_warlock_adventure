@@ -776,6 +776,90 @@ nav {
   line-height: 1.5;
 }
 
+.wild-magic-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius);
+  color: var(--gold-light);
+  text-decoration: none;
+  font-family: "Cinzel", serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.wild-magic-link:hover {
+  background: rgba(139, 105, 20, 0.12);
+  border-color: var(--gold);
+}
+
+/* ─── WILD MAGIC TABLE ───────────────────────────── */
+.wild-magic-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.wild-magic-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.wild-magic-filter span {
+  font-family: "Cinzel", serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.wild-magic-table-wrap {
+  overflow-x: auto;
+}
+
+.wild-magic-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.wild-magic-table th,
+.wild-magic-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.wild-magic-table th {
+  font-family: "Cinzel", serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.wild-magic-table td {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.wild-magic-table tr:hover td {
+  background: rgba(139, 105, 20, 0.05);
+}
+
+.wild-roll {
+  font-family: "Cinzel", serif;
+  color: var(--gold-light);
+}
+
 /* ─── NPC CARDS ──────────────────────────────────── */
 .npc-filters {
   display: flex;
@@ -1408,5 +1492,11 @@ nav {
   .journal-date-real {
     margin-left: 0;
     width: 100%;
+  }
+  .wild-magic-filters {
+    grid-template-columns: 1fr;
+  }
+  .wild-magic-table {
+    min-width: 560px;
   }
 }

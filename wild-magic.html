@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Дика Магія — Діоніс</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page">
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">Дика Магія</div>
+        <div class="page-subtitle">Таблиця спалаху дикої магії (d100)</div>
+      </div>
+      <div id="wild-magic-stats" style="text-align:right"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Фільтр по числах</div>
+      <div class="wild-magic-filters">
+        <label class="wild-magic-filter">
+          <span>Точне число (1-100)</span>
+          <input id="filter-exact" class="form-input" type="number" min="1" max="100" placeholder="Напр. 37">
+        </label>
+        <button id="filter-reset" class="btn btn-secondary" type="button">Скинути</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="wild-magic-table-wrap">
+        <table class="wild-magic-table">
+          <thead>
+            <tr>
+              <th style="width:120px">Кидок</th>
+              <th style="width:170px">Тип</th>
+              <th>Ефект</th>
+            </tr>
+          </thead>
+          <tbody id="wild-magic-body"></tbody>
+        </table>
+      </div>
+      <div id="wild-magic-empty" class="npc-empty" style="display:none">Нічого не знайдено за цим фільтром.</div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('nav-root').innerHTML = renderNav('spells.html');
+
+    function parseRollRange(roll) {
+      const [fromRaw, toRaw] = String(roll).split('-');
+      const from = Number.parseInt(fromRaw, 10);
+      const to = Number.parseInt((toRaw || fromRaw), 10);
+      return {
+        from: Number.isFinite(from) ? from : 0,
+        to: Number.isFinite(to) ? to : 0,
+      };
+    }
+
+    function severityLabel(severity) {
+      const map = {
+        beneficial: 'Корисний',
+        harmful: 'Шкідливий',
+        weird: 'Дивний',
+        catastrophic: 'Катастрофічний',
+        dramatic: 'Драматичний',
+        mixed: 'Змішаний',
+      };
+      return map[severity] || severity;
+    }
+
+    function severityClass(severity) {
+      const map = {
+        beneficial: 'badge-green',
+        harmful: 'badge-red',
+        catastrophic: 'badge-red',
+      };
+      return map[severity] || 'badge-muted';
+    }
+
+    function normalizeFilterValue(value) {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function clampRoll(value) {
+      if (value == null) return null;
+      return Math.max(1, Math.min(100, value));
+    }
+
+    function buildRow(item) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="wild-roll">${item.roll}</td>
+        <td><span class="badge ${severityClass(item.severity)}">${severityLabel(item.severity)}</span></td>
+        <td>${item.effect}</td>
+      `;
+      return tr;
+    }
+
+    function applyFilter(entries) {
+      const exact = clampRoll(normalizeFilterValue(document.getElementById('filter-exact').value));
+
+      return entries.filter((entry) => {
+        const range = parseRollRange(entry.roll);
+        if (exact != null && (exact < range.from || exact > range.to)) return false;
+        return true;
+      });
+    }
+
+    async function init() {
+      const entries = await loadJSON('data/wild_magic.json');
+      const body = document.getElementById('wild-magic-body');
+      const empty = document.getElementById('wild-magic-empty');
+      const stats = document.getElementById('wild-magic-stats');
+      const filterInputs = [
+        document.getElementById('filter-exact'),
+      ];
+
+      function render() {
+        const filtered = applyFilter(entries);
+        body.innerHTML = '';
+        filtered.forEach((entry) => body.appendChild(buildRow(entry)));
+        empty.style.display = filtered.length ? 'none' : 'block';
+        stats.innerHTML = `
+          <div style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-muted);letter-spacing:.1em">
+            РЯДКІВ: <span style="color:var(--gold-light)">${filtered.length}</span> / ${entries.length}
+          </div>`;
+      }
+
+      filterInputs.forEach((input) => {
+        input.addEventListener('input', render);
+      });
+      document.getElementById('filter-reset').addEventListener('click', () => {
+        filterInputs.forEach((input) => {
+          input.value = '';
+        });
+        render();
+      });
+
+      render();
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>
