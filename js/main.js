@@ -2,6 +2,7 @@
 function renderNav(active) {
   const pages = [
     { href: "index.html", label: "Головна", icon: "🏠" },
+    { href: "play.html", label: "Грати", icon: "⚔️" },
     { href: "character.html", label: "Персонаж", icon: "🧙" },
     { href: "inventory.html", label: "Інвентар", icon: "🎒" },
     { href: "spells.html", label: "Закляття", icon: "✨" },
