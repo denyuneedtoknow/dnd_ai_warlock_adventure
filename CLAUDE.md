@@ -30,18 +30,23 @@ GitHub Repo (denyuneedtoknow/dnd_ai_warlock_adventure)
 ├── npcs.html           # NPC directory with relation filter
 ├── journal.html        # Session diary, reverse chronological
 ├── admin.html          # Admin panel (GitHub PAT required)
+├── play.html           # AI DM chat — sends context to /api/chat, streams response
+├── api/
+│   └── chat.js         # Vercel Edge function — Anthropic/Gemini, SSE streaming
 ├── css/
 │   └── style.css       # Dark fantasy theme — CSS variables, responsive grids
 ├── js/
 │   ├── main.js         # Shared: renderNav(), loadJSON(), tooltips, notify()
 │   └── admin.js        # Admin: GitHub API, all CRUD operations
-└── data/
-    ├── character.json
-    ├── inventory.json
-    ├── journal.json
-    ├── journal_backup.json   # Auto-created before every journal write
-    ├── npcs.json
-    └── spells.json
+├── data/
+│   ├── character.json
+│   ├── inventory.json
+│   ├── journal.json
+│   ├── journal_backup.json   # Auto-created before every journal write
+│   ├── npcs.json
+│   └── spells.json
+├── vercel.json         # Vercel config: Edge function maxDuration
+└── package.json        # Minimal — needed for Vercel to recognise ES module syntax
 ```
 
 ---
@@ -146,4 +151,29 @@ Contains `cantrips[]`, `spells[]`, `invocations[]`, `pact_slots` object. Each sp
 
 ## Deployment
 
-GitHub Pages from `main` branch, root directory. Push to `main` → live in ~30 seconds. No CI needed.
+**Hosting: Vercel** (з version_0.2, раніше GitHub Pages).
+
+```
+GitHub Repo (main branch)
+    └── Vercel auto-deploy → production URL
+              └── /api/chat → Edge Runtime (Anthropic / Gemini)
+```
+
+### Vercel project settings
+- **Framework Preset:** Other
+- **Build Command:** *(порожньо)*
+- **Output Directory:** *(порожньо)*
+- **Production Branch:** `main`
+
+### Environment variables (Vercel Dashboard → Settings → Environment Variables)
+
+| Key | Description |
+|---|---|
+| `ANTHROPIC_API_KEY` | `sk-ant-...` |
+| `MODEL_PROVIDER` | `anthropic` або `gemini` |
+| `ANTHROPIC_MODEL` | опціонально, дефолт `claude-sonnet-4-6` |
+| `GEMINI_API_KEY` | потрібен якщо `MODEL_PROVIDER=gemini` |
+| `GEMINI_MODEL` | опціонально, дефолт `gemini-2.0-flash` |
+
+### Оновлення даних
+Admin panel (admin.html) комітить JSON файли через GitHub API → Vercel автоматично передеплоює (~1-2 хв).
