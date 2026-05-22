@@ -8,17 +8,102 @@ function renderNav(active) {
     { href: "npcs.html", label: "Персонажі", icon: "👥" },
     { href: "journal.html", label: "Щоденник", icon: "📖" },
   ];
-  const links = pages
-    .map(
-      (p) =>
-        `<li><a href="${p.href}" class="${p.href === active ? "active" : ""}" aria-label="${p.label}"><span class="nav-link-icon">${p.icon}</span><span class="nav-link-label">${p.label}</span></a></li>`,
-    )
+
+  let items = [...pages];
+  if (active === "index.html") {
+    items.push({ href: "admin.html", label: "Адмін", icon: "⚙️", extraClass: "nav-admin" });
+  } else if (active === "admin.html") {
+    items = pages
+      .filter((p) => p.href !== "index.html")
+      .concat([{ href: "index.html", label: "Головна", icon: "🏠" }]);
+  }
+
+  const links = items
+    .map((p) => {
+      const cls = [p.href === active ? "active" : "", p.extraClass || ""]
+        .filter(Boolean)
+        .join(" ");
+      return `<li><a href="${p.href}" class="${cls}" aria-label="${p.label}"><span class="nav-link-icon">${p.icon}</span><span class="nav-link-label">${p.label}</span></a></li>`;
+    })
     .join("");
+
+  const current =
+    active === "admin.html"
+      ? { label: "Адмін" }
+      : items.find((p) => p.href === active) || items[0];
+
   return `
-    <nav>
-      <ul class="nav-links">${links}</ul>
+    <nav class="site-nav" aria-label="Головна навігація">
+      <div class="nav-bar">
+        <span class="nav-current">${current.label}</span>
+        <button
+          type="button"
+          class="nav-burger"
+          aria-expanded="false"
+          aria-controls="nav-menu"
+          aria-label="Відкрити меню"
+        >
+          <span class="nav-burger-line"></span>
+          <span class="nav-burger-line"></span>
+          <span class="nav-burger-line"></span>
+        </button>
+      </div>
+      <ul class="nav-links" id="nav-menu">${links}</ul>
     </nav>`;
 }
+
+function closeSiteNav() {
+  const nav = document.querySelector(".site-nav");
+  if (!nav) return;
+  nav.classList.remove("nav-open");
+  document.body.classList.remove("nav-menu-open");
+  const burger = nav.querySelector(".nav-burger");
+  if (burger) {
+    burger.setAttribute("aria-expanded", "false");
+    burger.setAttribute("aria-label", "Відкрити меню");
+  }
+}
+
+function toggleSiteNav() {
+  const nav = document.querySelector(".site-nav");
+  if (!nav) return;
+  const open = !nav.classList.contains("nav-open");
+  nav.classList.toggle("nav-open", open);
+  document.body.classList.toggle("nav-menu-open", open);
+  const burger = nav.querySelector(".nav-burger");
+  if (burger) {
+    burger.setAttribute("aria-expanded", String(open));
+    burger.setAttribute("aria-label", open ? "Закрити меню" : "Відкрити меню");
+  }
+}
+
+(function initSiteNavHandlers() {
+  if (document.documentElement.dataset.navHandlers) return;
+  document.documentElement.dataset.navHandlers = "1";
+
+  document.addEventListener("click", (e) => {
+    const nav = document.querySelector(".site-nav");
+    if (!nav) return;
+
+    if (e.target.closest(".nav-burger")) {
+      toggleSiteNav();
+      return;
+    }
+
+    if (e.target.closest(".nav-links a")) {
+      closeSiteNav();
+      return;
+    }
+
+    if (nav.classList.contains("nav-open") && !nav.contains(e.target)) {
+      closeSiteNav();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSiteNav();
+  });
+})();
 
 // ─── FETCH JSON ───────────────────────────────────────────────────────────────
 async function loadJSON(path) {

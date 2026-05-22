@@ -23,14 +23,14 @@ GitHub Repo (denyuneedtoknow/dnd_ai_warlock_adventure)
 ## File structure
 
 ```
-├── index.html          # Landing: hero section, status bar, last journal entry
+├── index.html          # Landing: hero + AI DM chat (session start/restore/clear)
 ├── character.html      # Full character sheet (stats, saves, skills, features)
 ├── inventory.html      # Equipment paperdoll + 48-slot backpack + wallet
 ├── spells.html         # Spell list, pact magic, cantrips, invocations
 ├── npcs.html           # NPC directory with relation filter
 ├── journal.html        # Session diary, reverse chronological
 ├── admin.html          # Admin panel (GitHub PAT required)
-├── play.html           # AI DM chat — sends context to /api/chat, streams response
+├── play.html           # AI DM chat standalone (legacy, same logic as index.html)
 ├── api/
 │   └── chat.js         # Vercel Edge function — Anthropic/Gemini, SSE streaming
 ├── css/
@@ -45,6 +45,9 @@ GitHub Repo (denyuneedtoknow/dnd_ai_warlock_adventure)
 │   ├── journal_backup.json   # Auto-created before every journal write
 │   ├── npcs.json
 │   └── spells.json
+├── api/
+│   ├── chat.js         # Vercel Edge — Anthropic/Gemini, SSE streaming + json mode
+│   └── save-session.js # Vercel Edge — commits journal.json to GitHub via PAT
 ├── vercel.json         # Vercel config: Edge function maxDuration
 └── package.json        # Minimal — needed for Vercel to recognise ES module syntax
 ```
@@ -174,6 +177,46 @@ GitHub Repo (main branch)
 | `ANTHROPIC_MODEL` | опціонально, дефолт `claude-sonnet-4-6` |
 | `GEMINI_API_KEY` | потрібен якщо `MODEL_PROVIDER=gemini` |
 | `GEMINI_MODEL` | опціонально, дефолт `gemini-2.0-flash` |
+| `GITHUB_REPO` | `owner/repo` — потрібен для `/api/save-session` |
+| `GITHUB_BRANCH` | опціонально, дефолт `main` |
 
 ### Оновлення даних
 Admin panel (admin.html) комітить JSON файли через GitHub API → Vercel автоматично передеплоює (~1-2 хв).
+
+---
+
+## AI DM Chat (index.html)
+
+Чат з Майстром вбудований в головну сторінку.
+
+### Флоу сесії
+1. **Нова сесія** — показується кнопка "⚔️ Почати сесію"; при кліку DM отримує контекст і відкриває сцену
+2. **Активна сесія** — гравець пише, DM відповідає через SSE streaming
+3. **Збереження** — кожне повідомлення автоматично зберігається в localStorage (`dnd_session_v1`)
+4. **Відновлення** — при перезавантаженні сторінки сесія відновлюється автоматично
+5. **Нова сесія** — кнопка "↺ Нова сесія" очищає localStorage і скидає чат (з підтвердженням)
+
+### localStorage
+- Ключ: `dnd_session_v1`
+- Формат: JSON-масив `[{ role, content, _hidden? }, ...]`
+- `_hidden: true` — повідомлення-ініціатор (opener від системи), не рендериться у чаті
+
+### Завершення сесії
+Кнопка "📓 Завершити сесію" (з'являється після старту):
+1. Надсилає не-стрімінговий запит до `/api/chat` з `json: true` — DM генерує JSON-запис
+2. Відкривається модалка з редагованими полями: день, дата, локація, опис, наступні кроки
+3. "Зберегти" → POST до `/api/save-session` з `{ entry, pat, inventoryChanges?, npcChanges? }` → коміти journal.json + inventory.json + npcs.json через GitHub API
+4. Після збереження — пропонує розпочати нову сесію
+
+### Формат відповіді DM при підсумуванні
+```json
+{
+  "journal_entry": { "day": 44, "date_real": "...", "location": "...", "summary": "...", "next_steps": "..." },
+  "inventory_changes": { "add": [{"name":"...","desc":"..."}], "remove": ["назва"], "gold_delta": 0 },
+  "npc_changes": {
+    "add": [{ "id": "snake_id", "name": "...", "role": "...", "relation": "neutral", "avatar": "🧑", "location": "...", "description": "..." }],
+    "update": [{ "id": "існуючий_id", "name": "Ім'я для відображення", "relation": "ally" }]
+  }
+}
+```
+Гравець бачить модалку з усіма трьома секціями, може відмітити галочками які застосовувати.
