@@ -29,56 +29,506 @@
         </div>
       </div>
 
-      <div class="nav-cards">
-        <a class="nav-card" href="play.html" style="border-color: var(--gold)">
-          <div class="nav-card-icon">⚔️</div>
-          <div class="nav-card-title">Грати</div>
-          <div class="nav-card-desc">Спілкування з Майстром</div>
-        </a>
-        <a class="nav-card" href="character.html">
-          <div class="nav-card-icon">🧙</div>
-          <div class="nav-card-title">Персонаж</div>
-          <div class="nav-card-desc">Характеристики, скіли, риси</div>
-        </a>
-        <a class="nav-card" href="inventory.html">
-          <div class="nav-card-icon">🎒</div>
-          <div class="nav-card-title">Інвентар</div>
-          <div class="nav-card-desc">Спорядження та гаманець</div>
-        </a>
-        <a class="nav-card" href="spells.html">
-          <div class="nav-card-icon">✨</div>
-          <div class="nav-card-title">Закляття</div>
-          <div class="nav-card-desc">Відомі закляття та слоти</div>
-        </a>
-        <a class="nav-card" href="npcs.html">
-          <div class="nav-card-icon">👥</div>
-          <div class="nav-card-title">Персонажі</div>
-          <div class="nav-card-desc">Союзники, нейтрали, вороги</div>
-        </a>
-        <a class="nav-card" href="journal.html">
-          <div class="nav-card-icon">📖</div>
-          <div class="nav-card-title">Щоденник</div>
-          <div class="nav-card-desc">Хроніка пригод</div>
-        </a>
-        <a
-          class="nav-card"
-          href="admin.html"
-          style="border-color: var(--crimson); opacity: 0.6"
-        >
-          <div class="nav-card-icon">⚙️</div>
-          <div class="nav-card-title">Адмін</div>
-          <div class="nav-card-desc">Редагування даних</div>
-        </a>
+      <div class="divider">Сесія з Майстром</div>
+
+      <section class="play-section">
+        <div class="chat-messages" id="messages"></div>
+
+        <div class="chat-input-area">
+          <textarea
+            id="chat-input"
+            placeholder="Опишіть дії персонажа… (Enter — надіслати, Shift+Enter — новий рядок)"
+          ></textarea>
+          <div class="input-row">
+            <span class="input-hint" id="input-hint">Enter — надіслати</span>
+            <button id="new-session-btn" type="button" class="new-session-btn" hidden>↺ Нова сесія</button>
+            <button id="summarize-btn" type="button" class="summarize-btn" hidden>📓 Завершити сесію</button>
+            <button id="send-btn" type="button">Надіслати ⟶</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="summary-modal" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <div class="modal-header">📓 Запис у щоденник</div>
+        <div class="modal-body">
+          <div class="modal-row">
+            <div class="modal-field">
+              <label class="modal-label" for="s-day">День пригод</label>
+              <input type="number" id="s-day" class="modal-input" />
+            </div>
+            <div class="modal-field">
+              <label class="modal-label" for="s-date">Дата</label>
+              <input type="text" id="s-date" class="modal-input" />
+            </div>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="s-location">Локація</label>
+            <input type="text" id="s-location" class="modal-input" />
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="s-summary">Опис подій</label>
+            <textarea id="s-summary" class="modal-textarea" rows="6"></textarea>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="s-next">Наступні кроки</label>
+            <textarea id="s-next" class="modal-textarea" rows="3"></textarea>
+          </div>
+          <div id="modal-inventory" class="modal-changes-section" hidden>
+            <label class="changes-toggle">
+              <input type="checkbox" id="apply-inventory" checked>
+              <span>🎒 Зміни в інвентарі</span>
+            </label>
+            <div id="inventory-changes-list" class="changes-list"></div>
+          </div>
+          <div id="modal-npcs" class="modal-changes-section" hidden>
+            <label class="changes-toggle">
+              <input type="checkbox" id="apply-npcs" checked>
+              <span>👥 Зміни в персонажах</span>
+            </label>
+            <div id="npc-changes-list" class="changes-list"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="modal-cancel-btn" class="modal-cancel-btn">Скасувати</button>
+          <button type="button" id="modal-save-btn" class="modal-save-btn">💾 Зберегти в щоденник</button>
+        </div>
       </div>
-
-      <div class="divider">Останній запис щоденника</div>
-
-      <div id="last-entry"></div>
     </div>
 
     <script src="js/main.js"></script>
     <script>
       document.getElementById("nav-root").innerHTML = renderNav("index.html");
+
+      const SESSION_KEY = 'dnd_session_v1';
+      const history = [];
+      let generating = false;
+
+      const msgsEl = document.getElementById("messages");
+      const inputEl = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("send-btn");
+      const newSessionBtn = document.getElementById("new-session-btn");
+      const summarizeBtn = document.getElementById("summarize-btn");
+      const summaryModal = document.getElementById("summary-modal");
+      const modalSaveBtn = document.getElementById("modal-save-btn");
+      const modalCancelBtn = document.getElementById("modal-cancel-btn");
+      let pendingSummaryData = null;
+      let sessionContext = null;
+
+      async function loadContext() {
+        const [character, inventory, spells, journal] = await Promise.all([
+          loadJSON("data/character.json"),
+          loadJSON("data/inventory.json"),
+          loadJSON("data/spells.json"),
+          loadJSON("data/journal.json"),
+        ]);
+        return {
+          character,
+          inventory,
+          spells,
+          journal: journal.slice(0, 5),
+        };
+      }
+
+      function addMessage(role, text) {
+        const isPlayer = role === "user";
+        const wrap = document.createElement("div");
+        wrap.className = `msg ${isPlayer ? "player" : "dm"}`;
+        wrap.innerHTML = `
+        <div class="msg-avatar">${isPlayer ? "🧙" : "📜"}</div>
+        <div class="msg-body"><div class="msg-bubble"></div></div>`;
+        const bubble = wrap.querySelector(".msg-bubble");
+        bubble.textContent = text;
+        msgsEl.appendChild(wrap);
+        scrollDown();
+        return bubble;
+      }
+
+      function addThinking() {
+        const wrap = document.createElement("div");
+        wrap.className = "msg dm";
+        wrap.id = "thinking";
+        wrap.innerHTML = `
+        <div class="msg-avatar">📜</div>
+        <div class="msg-body">
+          <div class="thinking-wrap"><span></span><span></span><span></span></div>
+        </div>`;
+        msgsEl.appendChild(wrap);
+        scrollDown();
+        return wrap;
+      }
+
+      function addSaveBtn(bubble, text) {
+        const btn = document.createElement("button");
+        btn.className = "save-btn";
+        btn.type = "button";
+        btn.textContent = "📓 Зберегти в щоденник";
+        btn.onclick = () => saveToJournal(text);
+        bubble.parentElement.appendChild(btn);
+      }
+
+      function scrollDown() {
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+
+      function saveHistory() {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(history));
+      }
+
+      function showSessionStart() {
+        msgsEl.innerHTML = `
+          <div class="session-start">
+            <p class="session-start-hint">Вітаю, мандрівнику.<br>Готовий розпочати сесію?</p>
+            <button type="button" id="start-btn" class="start-session-btn">⚔️ Почати сесію</button>
+          </div>`;
+        document.getElementById('start-btn').addEventListener('click', startSession);
+        inputEl.disabled = true;
+        sendBtn.disabled = true;
+      }
+
+      function showNewSessionBtn() {
+        newSessionBtn.hidden = false;
+        summarizeBtn.hidden = false;
+      }
+
+      function clearSession() {
+        if (!confirm('Розпочати нову сесію? Поточний чат буде очищено.')) return;
+        localStorage.removeItem(SESSION_KEY);
+        history.length = 0;
+        sessionContext = null;
+        showSessionStart();
+      }
+
+      async function summarizeSession() {
+        summarizeBtn.disabled = true;
+        summarizeBtn.textContent = '⏳ Зачекайте…';
+
+        let context = null;
+        try { context = await loadContext(); } catch {}
+
+        const today = new Date().toISOString().slice(0, 10);
+        const lastDay = context?.journal?.[0]?.day ?? 0;
+        const summaryPrompt = `На основі нашої сесії створи повний підсумок. Відповідай ВИКЛЮЧНО валідним JSON без жодного додаткового тексту, у форматі:
+{"journal_entry":{"day":${lastDay + 1},"date_real":"${today}","location":"локація","summary":"детальний опис подій","next_steps":"що далі"},"inventory_changes":{"add":[{"name":"назва","desc":"опис"}],"remove":["назва предмету"],"gold_delta":0},"npc_changes":{"add":[{"id":"snake_case","name":"Ім'я","role":"Роль","relation":"neutral","avatar":"🧑","location":"місце","description":"опис"}],"update":[{"id":"існуючий_id","name":"Відоме ім'я","relation":"новий статус"}]}}
+Якщо змін не було — залиш порожніми масиви та gold_delta:0`;
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [
+                ...history.slice(-20).map(({ role, content }) => ({ role, content })),
+                { role: 'user', content: summaryPrompt },
+              ],
+              context,
+              json: true,
+            }),
+          });
+
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          let sessionData;
+          try {
+            const raw = data.text.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+            sessionData = JSON.parse(raw);
+            if (!sessionData.journal_entry) {
+              sessionData = { journal_entry: sessionData };
+            }
+          } catch {
+            notify('Не вдалось розпарсити відповідь. Спробуйте ще раз.', true);
+            return;
+          }
+
+          showSummaryModal(sessionData);
+        } catch (err) {
+          notify('Помилка: ' + err.message, true);
+        } finally {
+          summarizeBtn.disabled = false;
+          summarizeBtn.textContent = '📓 Завершити сесію';
+        }
+      }
+
+      function showSummaryModal(data) {
+        pendingSummaryData = data;
+        const entry = data.journal_entry || data;
+
+        document.getElementById('s-day').value = entry.day ?? '';
+        document.getElementById('s-date').value = entry.date_real ?? '';
+        document.getElementById('s-location').value = entry.location ?? '';
+        document.getElementById('s-summary').value = entry.summary ?? '';
+        document.getElementById('s-next').value = entry.next_steps ?? '';
+
+        const inv = data.inventory_changes;
+        const hasInv = inv && (inv.add?.length || inv.remove?.length || inv.gold_delta);
+        const invSection = document.getElementById('modal-inventory');
+        if (hasInv) { renderInventoryChanges(inv); invSection.hidden = false; }
+        else invSection.hidden = true;
+
+        const npcs = data.npc_changes;
+        const hasNpcs = npcs && (npcs.add?.length || npcs.update?.length);
+        const npcSection = document.getElementById('modal-npcs');
+        if (hasNpcs) { renderNpcChanges(npcs); npcSection.hidden = false; }
+        else npcSection.hidden = true;
+
+        summaryModal.style.display = 'flex';
+      }
+
+      function renderInventoryChanges(inv) {
+        const list = document.getElementById('inventory-changes-list');
+        const items = [];
+        for (const item of (inv.add || [])) items.push(`<span class="change-add">+ ${item.name}</span>`);
+        for (const name of (inv.remove || [])) items.push(`<span class="change-remove">− ${name}</span>`);
+        if (inv.gold_delta) {
+          const sign = inv.gold_delta > 0 ? '+' : '';
+          items.push(`<span class="${inv.gold_delta > 0 ? 'change-add' : 'change-remove'}">💰 ${sign}${inv.gold_delta} зл</span>`);
+        }
+        list.innerHTML = items.join('');
+      }
+
+      function renderNpcChanges(npcs) {
+        const list = document.getElementById('npc-changes-list');
+        const items = [];
+        for (const npc of (npcs.add || []))
+          items.push(`<span class="change-add">+ ${npc.name} (${npc.role}, ${npc.relation})</span>`);
+        for (const upd of (npcs.update || [])) {
+          const changes = Object.entries(upd)
+            .filter(([k]) => k !== 'id' && k !== 'name')
+            .map(([k, v]) => `${k}: ${v}`).join(', ');
+          items.push(`<span class="change-update">~ ${upd.name || upd.id}: ${changes}</span>`);
+        }
+        list.innerHTML = items.join('');
+      }
+
+      function hideSummaryModal() {
+        summaryModal.style.display = 'none';
+        pendingSummaryData = null;
+      }
+
+      async function saveSession() {
+        const pat = localStorage.getItem('dnd_gh_token');
+        if (!pat) { notify('GitHub PAT не знайдено', true); return; }
+
+        const day = parseInt(document.getElementById('s-day').value, 10);
+        const summary = document.getElementById('s-summary').value.trim();
+        if (!day || !summary) { notify('День та опис є обов\'язковими', true); return; }
+
+        const nextSteps = document.getElementById('s-next').value.trim();
+        const entry = {
+          day,
+          date_real: document.getElementById('s-date').value.trim(),
+          location: document.getElementById('s-location').value.trim(),
+          summary,
+          ...(nextSteps ? { next_steps: nextSteps } : {}),
+        };
+
+        modalSaveBtn.disabled = true;
+        modalSaveBtn.textContent = 'Зберігається…';
+
+        try {
+          const invSection = document.getElementById('modal-inventory');
+          const npcSection = document.getElementById('modal-npcs');
+          const saveBody = { entry, pat };
+          if (!invSection.hidden && document.getElementById('apply-inventory').checked && pendingSummaryData?.inventory_changes) {
+            saveBody.inventoryChanges = pendingSummaryData.inventory_changes;
+          }
+          if (!npcSection.hidden && document.getElementById('apply-npcs').checked && pendingSummaryData?.npc_changes) {
+            saveBody.npcChanges = pendingSummaryData.npc_changes;
+          }
+
+          const res = await fetch('/api/save-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saveBody),
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error ?? 'Невідома помилка');
+
+          hideSummaryModal();
+          notify('Запис збережено в щоденник!');
+        } catch (err) {
+          notify('Помилка збереження: ' + err.message, true);
+        } finally {
+          modalSaveBtn.disabled = false;
+          modalSaveBtn.textContent = '💾 Зберегти в щоденник';
+        }
+      }
+
+      async function startSession() {
+        msgsEl.innerHTML = '';
+        inputEl.disabled = false;
+        sendBtn.disabled = true;
+        generating = true;
+        showNewSessionBtn();
+
+        let context = null;
+        try { context = await loadContext(); } catch (e) {
+          notify('Помилка контексту: ' + e.message, true);
+        }
+        sessionContext = context;
+
+        const opener = 'Починається нова ігрова сесія. Ознайомся з останніми 3 записами щоденника та поточним станом персонажа. Без вступних слів — відразу коротко підсумуй де ми зупинились і постав поточну сцену для гравця.';
+        history.push({ role: 'user', content: opener, _hidden: true });
+        saveHistory();
+
+        const thinkEl = addThinking();
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: history.slice(-20).map(({ role, content }) => ({ role, content })),
+              context,
+            }),
+          });
+          thinkEl.remove();
+          if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+
+          const bubble = addMessage('assistant', '');
+          let fullText = '';
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          outer: while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n');
+            buf = lines.pop() ?? '';
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const raw = line.slice(6).trim();
+              if (raw === '[DONE]') break outer;
+              try {
+                const p = JSON.parse(raw);
+                if (p.error) throw new Error(p.error);
+                if (p.text) { fullText += p.text; bubble.textContent = fullText; scrollDown(); }
+              } catch (e) {
+                if (e.message !== 'Unexpected token') throw e;
+              }
+            }
+          }
+          history.push({ role: 'assistant', content: fullText });
+          saveHistory();
+        } catch (err) {
+          document.getElementById('thinking')?.remove();
+          addMessage('assistant', '⚠ Помилка: ' + err.message);
+        }
+
+        generating = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+
+      function saveToJournal(text) {
+        localStorage.setItem("dnd_journal_draft", text);
+        navigator.clipboard?.writeText(text).catch(() => {});
+        window.open("admin.html", "_blank");
+        notify(
+          "Текст скопійовано та збережено. Вставте у поле щоденника в адмін-панелі.",
+        );
+      }
+
+      async function send() {
+        const text = inputEl.value.trim();
+        if (!text || generating) return;
+
+        generating = true;
+        sendBtn.disabled = true;
+        inputEl.value = "";
+        inputEl.style.height = "";
+        localStorage.removeItem("dnd_chat_draft");
+
+        addMessage("user", text);
+        history.push({ role: "user", content: text });
+        saveHistory();
+
+        const context = sessionContext;
+
+        const thinkEl = addThinking();
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: history.slice(-20).map(({ role, content }) => ({ role, content })),
+              context,
+            }),
+          });
+
+          thinkEl.remove();
+
+          if (!res.ok) {
+            throw new Error(`Сервер: ${res.status} — ${await res.text()}`);
+          }
+
+          const bubble = addMessage("assistant", "");
+          let fullText = "";
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+
+          outer: while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const raw = line.slice(6).trim();
+              if (raw === "[DONE]") break outer;
+              try {
+                const parsed = JSON.parse(raw);
+                if (parsed.error) throw new Error(parsed.error);
+                if (parsed.text) {
+                  fullText += parsed.text;
+                  bubble.textContent = fullText;
+                  scrollDown();
+                }
+              } catch (parseErr) {
+                if (parseErr.message !== "Unexpected token") throw parseErr;
+              }
+            }
+          }
+
+          history.push({ role: "assistant", content: fullText });
+          saveHistory();
+          addSaveBtn(bubble, fullText);
+        } catch (err) {
+          document.getElementById("thinking")?.remove();
+          addMessage("assistant", "⚠ Помилка: " + err.message);
+        }
+
+        generating = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+
+      sendBtn.addEventListener("click", send);
+      newSessionBtn.addEventListener("click", clearSession);
+      summarizeBtn.addEventListener("click", summarizeSession);
+      modalSaveBtn.addEventListener("click", saveSession);
+      modalCancelBtn.addEventListener("click", hideSummaryModal);
+
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      });
+
+      inputEl.addEventListener("input", () => {
+        inputEl.style.height = "auto";
+        inputEl.style.height =
+          Math.min(inputEl.scrollHeight, 180) + "px";
+        localStorage.setItem("dnd_chat_draft", inputEl.value);
+      });
 
       async function init() {
         const [char, journal] = await Promise.all([
@@ -90,27 +540,31 @@
         const currentLocation =
           journal[0]?.location?.split("→").pop().trim() ?? "—";
         const currentDate = journal[0]?.date_real ?? "—";
-        document.getElementById("hero-title").textContent =
-          char.name ?? "—";
+        document.getElementById("hero-title").textContent = char.name ?? "—";
         document.getElementById("hero-subtitle").textContent =
           `${char.class ?? "—"} · AC ${char.ac ?? "—"}`;
         document.getElementById("status-day").textContent = currentDay;
-        document.getElementById("status-location").textContent = currentLocation;
+        document.getElementById("status-location").textContent =
+          currentLocation;
         document.getElementById("status-date").textContent = currentDate;
 
-        const e = journal[0];
-        if (e) {
-          document.getElementById("last-entry").innerHTML = `
-          <div class="journal-entry">
-            <div class="journal-header">
-              <span class="journal-day">День ${e.day}</span>
-              <span class="journal-location">📍 ${e.location}</span>
-              <span class="journal-date-real">${e.date_real}</span>
-            </div>
-            <div class="journal-summary">${e.summary}</div>
-            ${e.next_steps ? `<div class="journal-next">▶ ${e.next_steps}</div>` : ""}
-          </div>`;
+        const savedSession = localStorage.getItem(SESSION_KEY);
+        if (savedSession) {
+          try {
+            const msgs = JSON.parse(savedSession);
+            if (Array.isArray(msgs) && msgs.length) {
+              for (const msg of msgs) {
+                history.push(msg);
+                if (!msg._hidden) addMessage(msg.role, msg.content);
+              }
+              showNewSessionBtn();
+              const draft = localStorage.getItem("dnd_chat_draft");
+              if (draft) { inputEl.value = draft; }
+              return;
+            }
+          } catch {}
         }
+        showSessionStart();
       }
 
       init().catch(console.error);

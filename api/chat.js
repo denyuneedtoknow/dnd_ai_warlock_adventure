@@ -87,13 +87,28 @@ export default async function handler(req) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { messages = [], context } = body;
+  const { messages = [], context, json: jsonMode = false } = body;
   const provider = (process.env.MODEL_PROVIDER || 'anthropic').toLowerCase();
   const systemPrompt = SYSTEM_PROMPT.replace('{CONTEXT}', buildContext(context));
   const encoder = new TextEncoder();
 
-  // Send only the last 20 messages to keep costs down
-  const history = messages.slice(-20);
+  const history = messages.slice(-10);
+
+  if (jsonMode) {
+    try {
+      const text = provider === 'gemini'
+        ? await fetchGeminiJson(history, systemPrompt)
+        : await fetchAnthropicJson(history, systemPrompt);
+      return new Response(JSON.stringify({ text }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
   try {
     if (provider === 'gemini') {
@@ -117,11 +132,12 @@ async function handleAnthropic(messages, systemPrompt, encoder) {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31',
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
+      model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system: systemPrompt,
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
       stream: true,
       messages,
     }),
@@ -212,6 +228,70 @@ async function handleGemini(messages, systemPrompt, encoder) {
     }
     ctrl.enqueue(encoder.encode('data: [DONE]\n\n'));
   });
+}
+
+// ── JSON (non-streaming) ─────────────────────────────────────────────────────
+
+async function fetchAnthropicJson(messages, systemPrompt) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY не задано');
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31',
+    },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+      stream: false,
+      messages,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Anthropic ${res.status}: ${txt}`);
+  }
+
+  const data = await res.json();
+  return data.content?.[0]?.text ?? '';
+}
+
+async function fetchGeminiJson(messages, systemPrompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY не задано');
+
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: { maxOutputTokens: 2048 },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Gemini ${res.status}: ${txt}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
