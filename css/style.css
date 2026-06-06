@@ -1039,8 +1039,8 @@ body.nav-menu-open {
 }
 
 .msg {
+  position: relative;
   display: flex;
-  gap: 0.65rem;
   animation: msg-fade 0.18s ease-out both;
 }
 
@@ -1056,6 +1056,10 @@ body.nav-menu-open {
 }
 
 .msg-avatar {
+  position: absolute;
+  top: 0.2rem;
+  left: 0;
+  transform: translateX(-45%);
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -1064,7 +1068,6 @@ body.nav-menu-open {
   justify-content: center;
   font-size: 0.95rem;
   flex-shrink: 0;
-  margin-top: 3px;
   border: 1px solid var(--border);
   background: var(--bg-card);
 }
@@ -1087,8 +1090,13 @@ body.nav-menu-open {
 
 .msg.player {
   align-self: flex-end;
-  flex-direction: row-reverse;
   max-width: 80%;
+}
+
+.msg.player .msg-avatar {
+  left: auto;
+  right: 0;
+  transform: translateX(45%);
 }
 
 .msg.player .msg-bubble {
@@ -1101,10 +1109,11 @@ body.nav-menu-open {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  width: 100%;
 }
 
 .msg-bubble {
-  padding: 0.65rem 0.95rem;
+  padding: 0.52rem 0.72rem;
   border-radius: 8px;
   font-size: 1.06rem;
   line-height: 1.68;
@@ -2115,9 +2124,30 @@ body.nav-menu-open {
   }
   .chat-messages {
     max-height: 52vh;
+    padding: 0.4rem;
   }
   .msg.dm,
   .msg.player {
     max-width: 96%;
+  }
+  .msg {
+    padding-left: 0;
+  }
+  .msg.player {
+    padding-right: 0;
+  }
+  .msg-body {
+    gap: 0.2rem;
+  }
+  .msg-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.84rem;
+    top: 0.12rem;
+  }
+  .msg-bubble {
+    padding: 0.34rem 0.5rem;
+    font-size: 0.93rem;
+    line-height: 1.5;
   }
 }

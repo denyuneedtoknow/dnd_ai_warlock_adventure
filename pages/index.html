@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="../" />
     <title>Діоніс — Кампанія</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
@@ -425,7 +426,7 @@
       function saveToJournal(text) {
         localStorage.setItem("dnd_journal_draft", text);
         navigator.clipboard?.writeText(text).catch(() => {});
-        window.open("admin.html", "_blank");
+        window.open("pages/admin.html", "_blank");
         notify(
           "Текст скопійовано та збережено. Вставте у поле щоденника в адмін-панелі.",
         );

@@ -1,5 +1,12 @@
 {
   "name": "dnd-tracker",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "local": "vercel dev",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "vercel": "^54.9.1"
+  }
 }

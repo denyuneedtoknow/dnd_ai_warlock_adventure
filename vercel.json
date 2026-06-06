@@ -1,4 +1,13 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "devCommand": null,
+  "rewrites": [
+    { "source": "/", "destination": "/pages/index.html" },
+    {
+      "source": "/(index|character|inventory|spells|npcs|journal|admin|play|wild-magic).html",
+      "destination": "/pages/$1.html"
+    }
+  ],
   "functions": {
     "api/chat.js": {
       "maxDuration": 60

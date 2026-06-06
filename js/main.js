@@ -1,26 +1,35 @@
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 function renderNav(active) {
+  const toPagePath = (href) =>
+    href.startsWith("pages/") ? href : `pages/${href}`;
+  const activePath = toPagePath(active);
+
   const pages = [
-    { href: "index.html", label: "Головна", icon: "🏠" },
-    { href: "character.html", label: "Персонаж", icon: "🧙" },
-    { href: "inventory.html", label: "Інвентар", icon: "🎒" },
-    { href: "spells.html", label: "Закляття", icon: "✨" },
-    { href: "npcs.html", label: "Персонажі", icon: "👥" },
-    { href: "journal.html", label: "Щоденник", icon: "📖" },
+    { href: toPagePath("index.html"), label: "Головна", icon: "🏠" },
+    { href: toPagePath("character.html"), label: "Персонаж", icon: "🧙" },
+    { href: toPagePath("inventory.html"), label: "Інвентар", icon: "🎒" },
+    { href: toPagePath("spells.html"), label: "Закляття", icon: "✨" },
+    { href: toPagePath("npcs.html"), label: "Персонажі", icon: "👥" },
+    { href: toPagePath("journal.html"), label: "Щоденник", icon: "📖" },
   ];
 
   let items = [...pages];
   if (active === "index.html") {
-    items.push({ href: "admin.html", label: "Адмін", icon: "⚙️", extraClass: "nav-admin" });
+    items.push({
+      href: toPagePath("admin.html"),
+      label: "Адмін",
+      icon: "⚙️",
+      extraClass: "nav-admin",
+    });
   } else if (active === "admin.html") {
     items = pages
-      .filter((p) => p.href !== "index.html")
-      .concat([{ href: "index.html", label: "Головна", icon: "🏠" }]);
+      .filter((p) => p.href !== toPagePath("index.html"))
+      .concat([{ href: toPagePath("index.html"), label: "Головна", icon: "🏠" }]);
   }
 
   const links = items
     .map((p) => {
-      const cls = [p.href === active ? "active" : "", p.extraClass || ""]
+      const cls = [p.href === activePath ? "active" : "", p.extraClass || ""]
         .filter(Boolean)
         .join(" ");
       return `<li><a href="${p.href}" class="${cls}" aria-label="${p.label}"><span class="nav-link-icon">${p.icon}</span><span class="nav-link-label">${p.label}</span></a></li>`;
@@ -30,7 +39,7 @@ function renderNav(active) {
   const current =
     active === "admin.html"
       ? { label: "Адмін" }
-      : items.find((p) => p.href === active) || items[0];
+      : items.find((p) => p.href === activePath) || items[0];
 
   return `
     <nav class="site-nav" aria-label="Головна навігація">
